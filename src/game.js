@@ -14,6 +14,30 @@ const FOOD_COST = 3;
 const REROLL_COST = 1;
 const BATTLE_STEP_SECONDS = 0.52;
 const BATTLE_RESULT_HOLD_SECONDS = 1.8;
+const BATTLE_CARD_WIDTH = 102;
+const BATTLE_CARD_HEIGHT = 252;
+const BATTLE_CARD_GAP = 12;
+const BATTLE_FRIENDLY_X = 86;
+const BATTLE_ENEMY_X = 708;
+const BATTLE_CARD_Y = 246;
+const BATTLE_LUNGE_SECONDS = 0.12;
+const BATTLE_IMPACT_SECONDS = 0.1;
+const BATTLE_SHIFT_SECONDS = 0.17;
+const BATTLE_FRONT_LUNGE_PX = 18;
+const BATTLE_FRONT_IMPACT_PX = 8;
+const BATTLE_RESULT_CONFIRM_DELAY_SECONDS = 0.08;
+const SHOP_CONTROL_GAP = 18;
+const SHOP_CONTROL_BTN_W = 166;
+const SHOP_CONTROL_BTN_H = 56;
+const SHOP_END_TURN_BTN_W = 196;
+const SHOP_END_TURN_BTN_H = 68;
+const SHOP_CONTROL_ROW_X = Math.round(
+  (WIDTH - (SHOP_CONTROL_BTN_W * 3 + SHOP_END_TURN_BTN_W + SHOP_CONTROL_GAP * 3)) / 2
+);
+const SHOP_CONTROL_ROW_Y = 616;
+const DEBUG_BTN_ROW_X = Math.round((WIDTH - (82 * 5 + 10 * 4)) / 2);
+const DEBUG_BTN_ROW_Y = 576;
+const SHOP_CONTROL_HINT_Y = 706;
 const TRIGGER_PRIORITY = {
   start: 10,
   pre_attack: 20,
@@ -89,7 +113,8 @@ const I18N = {
     ui_sell: "Sell (S)",
     ui_end_turn: "End Turn (E)",
     ui_test_presets: "Test Presets",
-    ui_controls: "Controls: click/drag cards, drag pet to Sell, right click shop to freeze, F fullscreen, L language",
+    ui_controls:
+      "Controls: click/drag cards, click card for details, drag pet to Sell, right click shop to freeze, F fullscreen, L language, Esc close details",
     preset_chocolate: "Choco",
     preset_melon: "Melon",
     preset_dodo: "Dodo",
@@ -107,6 +132,7 @@ const I18N = {
     battle_result_win: "Victory!",
     battle_result_lose: "Defeat!",
     battle_result_draw: "Draw!",
+    battle_click_to_continue: "Click anywhere to continue",
     over_win: "You Win!",
     over_lose: "Game Over",
     over_round: ({ round }) => `Round reached: ${round}`,
@@ -116,6 +142,27 @@ const I18N = {
     pet_lv_exp: ({ level, exp }) => `Lv ${level}  Exp ${exp}`,
     token_attack: ({ value }) => `A ${value}`,
     token_health: ({ value }) => `H ${value}`,
+    info_title_pet: "Pet Details",
+    info_title_food: "Food Details",
+    info_hint_close: "Click empty area or press Esc to close",
+    info_field_source: "Source",
+    info_field_type: "Type",
+    info_field_tier: "Tier",
+    info_field_attack: "Attack",
+    info_field_health: "Health",
+    info_field_level: "Level",
+    info_field_exp: "Exp",
+    info_field_perk: "Perk",
+    info_field_ability: "Ability",
+    info_field_effect: "Effect",
+    info_value_none: "None",
+    info_type_pet: "Pet",
+    info_type_food: "Food",
+    info_source_team: ({ slot }) => `Team slot ${slot}`,
+    info_source_shop_pet: ({ slot }) => `Shop pet slot ${slot}`,
+    info_source_shop_food: ({ slot }) => `Shop food slot ${slot}`,
+    info_source_battle_friendly: ({ slot }) => `Battle friendly #${slot}`,
+    info_source_battle_enemy: ({ slot }) => `Battle enemy #${slot}`,
     drag_default: "drag",
     drag_team: "team",
     drag_pet: "pet",
@@ -123,6 +170,12 @@ const I18N = {
     perk_meat: "MEAT",
     perk_garlic: "GARLIC",
     perk_melon: "MELON",
+    status_summon_bee: "BEE",
+    status_temp_buff: ({ attack, health }) => `TEMP ${attack >= 0 ? "+" : ""}${attack}/${health >= 0 ? "+" : ""}${health}`,
+    status_more: ({ count }) => `+${count}`,
+    perk_desc_meat: "Attacks deal +3 damage.",
+    perk_desc_garlic: "Take 2 less damage (minimum 1).",
+    perk_desc_melon: "Block up to 20 damage once.",
     food_effect_stat_1_1: "stat +1/+1",
     food_effect_summon_bee: "summon bee",
     food_effect_perk_meat: "perk meat",
@@ -133,6 +186,52 @@ const I18N = {
     food_effect_shop_buff_2_1: "shop buff +2/+1",
     food_effect_perk_melon: "perk melon",
     food_effect_exp_1: "exp +1",
+    effect_desc_stat_1_1: "Give a pet +1/+1.",
+    effect_desc_summon_bee: "Give Honey: summon a 1/1 Bee on faint.",
+    effect_desc_perk_meat: "Give Meat perk: attacks deal +3 damage.",
+    effect_desc_perk_garlic: "Give Garlic perk: take 2 less damage (minimum 1).",
+    effect_desc_stat_2_2: "Give a pet +2/+2.",
+    effect_desc_team_random_buff_1_1: "Buff 2 random team pets +1/+1.",
+    effect_desc_temp_3_3: "Give temporary +3/+3 for this battle.",
+    effect_desc_shop_buff_2_1: "Buff future shop pets by +2/+1.",
+    effect_desc_perk_melon: "Give Melon perk: block 20 damage once.",
+    effect_desc_exp_1: "Give a pet +1 experience.",
+    ability_name_level_buff_team: "Schooling",
+    ability_name_faint_buff_random_ally: "Last Gift",
+    ability_name_sell_buff_attack: "Sell Buff",
+    ability_name_faint_summon_zombie: "Zombie Spawn",
+    ability_name_start_ping_enemy: "Mosquito Ping",
+    ability_name_buy_buff_random_shop_pet: "Shop Coach",
+    ability_name_start_turn_gain_gold: "Wealth",
+    ability_name_friend_summoned_attack: "Summon Cheer",
+    ability_name_faint_buff_rear: "Rear Rally",
+    ability_name_hurt_buff_rear: "Backline Guard",
+    ability_name_behind_attack_gain: "Follow-Up",
+    ability_name_end_turn_buff_friend_ahead: "Forward Training",
+    ability_name_friend_eat_bonus_health: "Snack Care",
+    ability_name_hurt_gain_attack: "Rage",
+    ability_name_start_battle_buff_friend_ahead_attack: "Lead Tactics",
+    ability_name_end_turn_buff_level2_friends: "Veteran Coach",
+    ability_name_faint_give_melon_friend_behind: "Melon Legacy",
+    ability_desc_level_buff_team: ({ level }) => `Level up: give all friends +${level}/+${level}.`,
+    ability_desc_faint_buff_random_ally: ({ level }) => `Faint: give 1 random friend +${2 * level}/+${level}.`,
+    ability_desc_sell_buff_attack: ({ level }) => `Sell: give ${level} random friend +1 attack.`,
+    ability_desc_faint_summon_zombie: ({ level }) => `Faint: summon a ${level}/${level} Zombie.`,
+    ability_desc_start_ping_enemy: ({ level }) => `Start of battle: ping ${level} random enemies for 1 damage.`,
+    ability_desc_buy_buff_random_shop_pet: ({ level }) => `Buy: buff 1 random shop pet +${level}/+${level}.`,
+    ability_desc_start_turn_gain_gold: ({ level }) => `Start of turn: gain +${level} gold.`,
+    ability_desc_friend_summoned_attack: ({ level }) => `Friend summoned: give it +${level} attack.`,
+    ability_desc_faint_buff_rear: ({ level }) => `Faint: buff up to 2 friends behind +${level}/+${level}.`,
+    ability_desc_hurt_buff_rear: ({ level }) => `Hurt: buff friend behind +${level}/+${level}.`,
+    ability_desc_behind_attack_gain: ({ level }) => `Friend ahead attacks: gain +${2 * level}/+${level}.`,
+    ability_desc_end_turn_buff_friend_ahead: ({ level }) => `End turn: buff nearest friend ahead +${level}/+${level}.`,
+    ability_desc_friend_eat_bonus_health: ({ level }) => `Friend eats food: it gains +${level} extra health.`,
+    ability_desc_hurt_gain_attack: ({ level }) => `Hurt: gain +${2 * level} attack.`,
+    ability_desc_start_battle_buff_friend_ahead_attack: ({ level }) =>
+      `Start of battle: give friend ahead +50% of this pet's attack x${level} (min +1).`,
+    ability_desc_end_turn_buff_level2_friends: ({ level }) =>
+      `End turn: buff up to 2 level 2+ friends +${level}/+${level}.`,
+    ability_desc_faint_give_melon_friend_behind: () => "Faint: give Melon perk to the friend behind.",
     toast_language_switched: ({ language }) => `Language switched: ${language}.`,
     toast_level_up_player: ({ level }) => `Level up! Reached level ${level}.`,
     toast_not_enough_gold_reroll: "Not enough gold for reroll.",
@@ -199,7 +298,8 @@ const I18N = {
     ui_sell: "出售 (S)",
     ui_end_turn: "结束回合 (E)",
     ui_test_presets: "测试预设",
-    ui_controls: "操作：点击/拖拽卡片，拖拽宠物到出售，右键冻结商店，F 全屏，L 语言",
+    ui_controls:
+      "操作：点击/拖拽卡片，点击卡牌看详情，拖拽宠物到出售，右键冻结商店，F 全屏，L 语言，Esc 关闭详情",
     preset_chocolate: "巧克力",
     preset_melon: "蜜瓜",
     preset_dodo: "渡渡鸟",
@@ -217,6 +317,7 @@ const I18N = {
     battle_result_win: "胜利！",
     battle_result_lose: "失败！",
     battle_result_draw: "平局！",
+    battle_click_to_continue: "点击任意位置继续",
     over_win: "你赢了！",
     over_lose: "游戏结束",
     over_round: ({ round }) => `到达回合：${round}`,
@@ -226,6 +327,27 @@ const I18N = {
     pet_lv_exp: ({ level, exp }) => `等级 ${level} 经验 ${exp}`,
     token_attack: ({ value }) => `攻 ${value}`,
     token_health: ({ value }) => `血 ${value}`,
+    info_title_pet: "宠物详情",
+    info_title_food: "食物详情",
+    info_hint_close: "点击空白区域或按 Esc 关闭",
+    info_field_source: "来源",
+    info_field_type: "类型",
+    info_field_tier: "等级",
+    info_field_attack: "攻击",
+    info_field_health: "生命",
+    info_field_level: "级别",
+    info_field_exp: "经验",
+    info_field_perk: "效果",
+    info_field_ability: "技能",
+    info_field_effect: "效果",
+    info_value_none: "无",
+    info_type_pet: "宠物",
+    info_type_food: "食物",
+    info_source_team: ({ slot }) => `队伍槽位 ${slot}`,
+    info_source_shop_pet: ({ slot }) => `商店宠物槽 ${slot}`,
+    info_source_shop_food: ({ slot }) => `商店食物槽 ${slot}`,
+    info_source_battle_friendly: ({ slot }) => `战斗友军 ${slot}`,
+    info_source_battle_enemy: ({ slot }) => `战斗敌军 ${slot}`,
     drag_default: "拖拽",
     drag_team: "队伍",
     drag_pet: "宠物",
@@ -233,6 +355,12 @@ const I18N = {
     perk_meat: "肉",
     perk_garlic: "蒜",
     perk_melon: "蜜瓜",
+    status_summon_bee: "蜜蜂",
+    status_temp_buff: ({ attack, health }) => `临时${attack >= 0 ? "+" : ""}${attack}/${health >= 0 ? "+" : ""}${health}`,
+    status_more: ({ count }) => `+${count}`,
+    perk_desc_meat: "攻击时额外造成 3 点伤害。",
+    perk_desc_garlic: "受到伤害 -2，最低仍为 1。",
+    perk_desc_melon: "一次性抵挡最多 20 点伤害。",
     food_effect_stat_1_1: "属性 +1/+1",
     food_effect_summon_bee: "召唤蜜蜂",
     food_effect_perk_meat: "获得肉",
@@ -243,6 +371,52 @@ const I18N = {
     food_effect_shop_buff_2_1: "商店宠物 +2/+1",
     food_effect_perk_melon: "获得蜜瓜",
     food_effect_exp_1: "经验 +1",
+    effect_desc_stat_1_1: "给一只宠物 +1/+1。",
+    effect_desc_summon_bee: "给予蜂蜜：阵亡时召唤 1/1 蜜蜂。",
+    effect_desc_perk_meat: "给予肉效果：攻击时额外 +3 伤害。",
+    effect_desc_perk_garlic: "给予蒜效果：受到伤害 -2（最低 1）。",
+    effect_desc_stat_2_2: "给一只宠物 +2/+2。",
+    effect_desc_team_random_buff_1_1: "随机强化 2 只队伍宠物 +1/+1。",
+    effect_desc_temp_3_3: "本场战斗临时获得 +3/+3。",
+    effect_desc_shop_buff_2_1: "之后刷新的商店宠物获得 +2/+1。",
+    effect_desc_perk_melon: "给予蜜瓜效果：一次抵挡 20 伤害。",
+    effect_desc_exp_1: "给一只宠物 +1 经验。",
+    ability_name_level_buff_team: "升级增益",
+    ability_name_faint_buff_random_ally: "遗言赠礼",
+    ability_name_sell_buff_attack: "出售强化",
+    ability_name_faint_summon_zombie: "阵亡召唤",
+    ability_name_start_ping_enemy: "开战点射",
+    ability_name_buy_buff_random_shop_pet: "购买强化",
+    ability_name_start_turn_gain_gold: "回合产金",
+    ability_name_friend_summoned_attack: "召唤鼓舞",
+    ability_name_faint_buff_rear: "后排遗言",
+    ability_name_hurt_buff_rear: "受伤护后",
+    ability_name_behind_attack_gain: "跟随进攻",
+    ability_name_end_turn_buff_friend_ahead: "回合训练",
+    ability_name_friend_eat_bonus_health: "进食护理",
+    ability_name_hurt_gain_attack: "受伤暴怒",
+    ability_name_start_battle_buff_friend_ahead_attack: "开战战术",
+    ability_name_end_turn_buff_level2_friends: "精英教练",
+    ability_name_faint_give_melon_friend_behind: "遗言给蜜瓜",
+    ability_desc_level_buff_team: ({ level }) => `升级时：所有友军 +${level}/+${level}。`,
+    ability_desc_faint_buff_random_ally: ({ level }) => `阵亡时：随机强化 1 个友军 +${2 * level}/+${level}。`,
+    ability_desc_sell_buff_attack: ({ level }) => `出售时：给 ${level} 个随机友军 +1 攻击。`,
+    ability_desc_faint_summon_zombie: ({ level }) => `阵亡时：召唤 ${level}/${level} 僵尸蟋蟀。`,
+    ability_desc_start_ping_enemy: ({ level }) => `开战时：对 ${level} 个随机敌人造成 1 点伤害。`,
+    ability_desc_buy_buff_random_shop_pet: ({ level }) => `购买时：随机强化 1 个商店宠物 +${level}/+${level}。`,
+    ability_desc_start_turn_gain_gold: ({ level }) => `回合开始：额外获得 ${level} 金币。`,
+    ability_desc_friend_summoned_attack: ({ level }) => `友军被召唤时：使其 +${level} 攻击。`,
+    ability_desc_faint_buff_rear: ({ level }) => `阵亡时：最多强化后方 2 个友军 +${level}/+${level}。`,
+    ability_desc_hurt_buff_rear: ({ level }) => `受伤时：强化身后友军 +${level}/+${level}。`,
+    ability_desc_behind_attack_gain: ({ level }) => `前方友军攻击后：获得 +${2 * level}/+${level}。`,
+    ability_desc_end_turn_buff_friend_ahead: ({ level }) => `回合结束：强化前方最近友军 +${level}/+${level}。`,
+    ability_desc_friend_eat_bonus_health: ({ level }) => `友军吃食物时：额外 +${level} 生命。`,
+    ability_desc_hurt_gain_attack: ({ level }) => `受伤时：获得 +${2 * level} 攻击。`,
+    ability_desc_start_battle_buff_friend_ahead_attack: ({ level }) =>
+      `开战时：使前方友军获得本单位攻击力 50% x${level}（至少 +1）。`,
+    ability_desc_end_turn_buff_level2_friends: ({ level }) =>
+      `回合结束：最多强化 2 个 2 级及以上友军 +${level}/+${level}。`,
+    ability_desc_faint_give_melon_friend_behind: () => "阵亡时：给身后友军蜜瓜效果。",
     toast_language_switched: ({ language }) => `语言已切换：${language}。`,
     toast_level_up_player: ({ level }) => `升级！到达等级 ${level}。`,
     toast_not_enough_gold_reroll: "金币不足，无法刷新。",
@@ -358,6 +532,87 @@ function foodEffectDisplayName(effect) {
   return t(`food_effect_${effect}`);
 }
 
+function perkDescription(perk) {
+  if (!perk) return t("info_value_none");
+  return t(`perk_desc_${perk}`);
+}
+
+function abilityDisplayName(ability) {
+  if (!ability) return t("info_value_none");
+  return t(`ability_name_${ability}`);
+}
+
+function abilityDescription(ability, level = 1) {
+  if (!ability) return t("info_value_none");
+  return t(`ability_desc_${ability}`, { level });
+}
+
+function foodEffectDescription(effect) {
+  if (!effect) return t("info_value_none");
+  return t(`effect_desc_${effect}`);
+}
+
+function createBattleAnimState() {
+  return {
+    phase: "idle",
+    progress: 0,
+    t: 0,
+    duration: 0,
+    frontOffsetFriendly: 0,
+    frontOffsetEnemy: 0,
+    impactAlpha: 0,
+    hasShift: false,
+    shiftOffsetsById: {
+      friendly: {},
+      enemy: {},
+    },
+  };
+}
+
+function petStatusLabels(pet) {
+  if (!pet) return [];
+  const labels = [];
+  if (pet.perk) labels.push(perkDisplayName(pet.perk));
+  if (pet.summonOnFaint?.kind === "bee") labels.push(t("status_summon_bee"));
+  if ((pet.tempAttack ?? 0) !== 0 || (pet.tempHealth ?? 0) !== 0) {
+    labels.push(t("status_temp_buff", { attack: pet.tempAttack ?? 0, health: pet.tempHealth ?? 0 }));
+  }
+  return labels;
+}
+
+function summarizeStatusLabels(labels, maxVisible = 2) {
+  if (!labels.length) return "";
+  const visible = labels.slice(0, maxVisible);
+  const overflow = labels.length - visible.length;
+  if (overflow > 0) visible.push(t("status_more", { count: overflow }));
+  return visible.join(" · ");
+}
+
+function battleShiftOffsets(beforeIds, teamAfter) {
+  if (!Array.isArray(beforeIds) || !Array.isArray(teamAfter)) return {};
+  const oldIndexById = {};
+  for (let i = 0; i < beforeIds.length; i += 1) oldIndexById[beforeIds[i]] = i;
+
+  const offsets = {};
+  const slotOffset = BATTLE_CARD_WIDTH + BATTLE_CARD_GAP;
+  for (let i = 0; i < teamAfter.length; i += 1) {
+    const pet = teamAfter[i];
+    if (!pet) continue;
+    const oldIndex = oldIndexById[pet.id];
+    if (typeof oldIndex !== "number") continue;
+    const delta = oldIndex - i;
+    if (delta !== 0) offsets[pet.id] = delta * slotOffset;
+  }
+  return offsets;
+}
+
+function resetBattleFrontOffsets(anim) {
+  if (!anim) return;
+  anim.frontOffsetFriendly = 0;
+  anim.frontOffsetEnemy = 0;
+  anim.impactAlpha = 0;
+}
+
 function persistLanguagePreference() {
   try {
     window.localStorage?.setItem(LANGUAGE_STORAGE_KEY, state.language);
@@ -398,13 +653,37 @@ const ui = {
   teamSlots: buildRow(70, 128, TEAM_SLOTS, 220, 122, 16),
   shopPetSlots: buildRow(70, 306, SHOP_PET_SLOTS, 220, 122, 16),
   shopFoodSlots: buildRow(70, 466, SHOP_FOOD_SLOTS, 220, 122, 16),
-  rerollBtn: rect(1096, 132, 154, 56),
-  freezeBtn: rect(1096, 202, 154, 56),
-  sellBtn: rect(1096, 272, 154, 56),
-  endTurnBtn: rect(1096, 342, 154, 68),
+  battleFriendlySlots: buildRow(
+    BATTLE_FRIENDLY_X,
+    BATTLE_CARD_Y,
+    TEAM_SLOTS,
+    BATTLE_CARD_WIDTH,
+    BATTLE_CARD_HEIGHT,
+    BATTLE_CARD_GAP
+  ),
+  battleEnemySlots: buildRow(BATTLE_ENEMY_X, BATTLE_CARD_Y, TEAM_SLOTS, BATTLE_CARD_WIDTH, BATTLE_CARD_HEIGHT, BATTLE_CARD_GAP),
+  rerollBtn: rect(SHOP_CONTROL_ROW_X, SHOP_CONTROL_ROW_Y, SHOP_CONTROL_BTN_W, SHOP_CONTROL_BTN_H),
+  freezeBtn: rect(
+    SHOP_CONTROL_ROW_X + SHOP_CONTROL_BTN_W + SHOP_CONTROL_GAP,
+    SHOP_CONTROL_ROW_Y,
+    SHOP_CONTROL_BTN_W,
+    SHOP_CONTROL_BTN_H
+  ),
+  sellBtn: rect(
+    SHOP_CONTROL_ROW_X + (SHOP_CONTROL_BTN_W + SHOP_CONTROL_GAP) * 2,
+    SHOP_CONTROL_ROW_Y,
+    SHOP_CONTROL_BTN_W,
+    SHOP_CONTROL_BTN_H
+  ),
+  endTurnBtn: rect(
+    SHOP_CONTROL_ROW_X + (SHOP_CONTROL_BTN_W + SHOP_CONTROL_GAP) * 3,
+    SHOP_CONTROL_ROW_Y - 6,
+    SHOP_END_TURN_BTN_W,
+    SHOP_END_TURN_BTN_H
+  ),
   restartBtn: rect(530, 420, 220, 64),
   languageBtn: rect(1134, 42, 104, 50),
-  debugButtons: buildRow(820, 622, 5, 82, 36, 10),
+  debugButtons: buildRow(DEBUG_BTN_ROW_X, DEBUG_BTN_ROW_Y, 5, 82, 36, 10),
 };
 
 const debugScenarioButtons = [
@@ -439,6 +718,8 @@ const state = {
   battle: null,
   enemyPreview: [],
   drag: null,
+  inspectCard: null,
+  inspectPanelRect: null,
   debugEnemyPreset: null,
 };
 
@@ -475,6 +756,39 @@ function entityAtPosition(slots, x, y) {
     if (pointInRect(x, y, slots[i])) return i;
   }
   return -1;
+}
+
+function inspectAnchorFromSlot(slot) {
+  return {
+    x: Math.round(slot.x + slot.w + 12),
+    y: Math.round(slot.y + slot.h * 0.5),
+  };
+}
+
+function setInspectCard(kind, source, index, anchor) {
+  state.inspectCard = {
+    kind,
+    source,
+    index,
+    anchorX: Math.round(anchor.x),
+    anchorY: Math.round(anchor.y),
+  };
+}
+
+function clearInspectCard() {
+  state.inspectCard = null;
+  state.inspectPanelRect = null;
+}
+
+function inspectModalIsOpen() {
+  return !!state.inspectCard;
+}
+
+function consumeInspectModalClick(x, y) {
+  if (!inspectModalIsOpen()) return false;
+  if (state.inspectPanelRect && pointInRect(x, y, state.inspectPanelRect)) return true;
+  clearInspectCard();
+  return true;
 }
 
 function getTierForRound(round) {
@@ -556,6 +870,73 @@ function shopPoolFood() {
   return foodPool.filter((food) => food.tier <= tier);
 }
 
+function petTier(pet) {
+  if (!pet) return 0;
+  const def = petDef(pet.kind);
+  return def?.tier ?? 1;
+}
+
+function resolveInspectCard() {
+  const inspect = state.inspectCard;
+  if (!inspect) return null;
+  const slotNum = inspect.index + 1;
+
+  if (inspect.kind === "pet") {
+    let pet = null;
+    let sourceText = "";
+    if (inspect.source === "team") {
+      pet = state.team[inspect.index] ?? null;
+      sourceText = t("info_source_team", { slot: slotNum });
+    } else if (inspect.source === "shopPet") {
+      pet = state.shopPets[inspect.index] ?? null;
+      sourceText = t("info_source_shop_pet", { slot: slotNum });
+    } else if (inspect.source === "battleFriendly") {
+      pet = state.battle?.friendly?.[inspect.index] ?? null;
+      sourceText = t("info_source_battle_friendly", { slot: slotNum });
+    } else if (inspect.source === "battleEnemy") {
+      pet = state.battle?.enemy?.[inspect.index] ?? null;
+      sourceText = t("info_source_battle_enemy", { slot: slotNum });
+    }
+    if (!pet) return null;
+    return {
+      kind: "pet",
+      source: inspect.source,
+      sourceText,
+      slot: slotNum,
+      anchorX: inspect.anchorX,
+      anchorY: inspect.anchorY,
+      pet,
+      title: t("info_title_pet"),
+      name: petDisplayName(pet),
+      tier: petTier(pet),
+    };
+  }
+
+  if (inspect.kind === "food") {
+    let food = null;
+    let sourceText = "";
+    if (inspect.source === "shopFood") {
+      food = state.shopFood[inspect.index] ?? null;
+      sourceText = t("info_source_shop_food", { slot: slotNum });
+    }
+    if (!food) return null;
+    return {
+      kind: "food",
+      source: inspect.source,
+      sourceText,
+      slot: slotNum,
+      anchorX: inspect.anchorX,
+      anchorY: inspect.anchorY,
+      food,
+      title: t("info_title_food"),
+      name: foodDisplayName(food),
+      tier: food.tier ?? 0,
+    };
+  }
+
+  return null;
+}
+
 function pushToast(message) {
   state.toast = message;
   state.toastTime = 2.2;
@@ -599,6 +980,7 @@ function beginShopTurn() {
     .reduce((sum, pet) => sum + pet.level, 0);
   state.gold += startTurnGold;
   state.selected = null;
+  clearInspectCard();
   rerollShop(true);
 }
 
@@ -623,6 +1005,7 @@ function resetGame() {
   state.toastTime = 0;
   state.selected = null;
   state.drag = null;
+  clearInspectCard();
   state.debugEnemyPreset = null;
   beginShopTurn();
 }
@@ -880,6 +1263,7 @@ function resetScenarioBase(round = 3, level = 3) {
   state.drag = null;
   state.battle = null;
   state.debugEnemyPreset = null;
+  clearInspectCard();
   state.toast = "";
   state.toastTime = 0;
 }
@@ -1072,8 +1456,14 @@ function toggleFreezeSelection() {
 
 function clickTeamSlot(index) {
   const hasPet = !!state.team[index];
+  if (hasPet) {
+    const anchor = inspectAnchorFromSlot(ui.teamSlots[index]);
+    setInspectCard("pet", "team", index, anchor);
+  }
+
   if (!state.selected) {
     if (hasPet) state.selected = { type: "team", index };
+    else clearInspectCard();
     return;
   }
   if (state.selected.type === "team") {
@@ -1083,19 +1473,40 @@ function clickTeamSlot(index) {
     }
     swapTeamSlots(state.selected.index, index);
     clearSelection();
+    if (state.team[index]) {
+      const anchor = inspectAnchorFromSlot(ui.teamSlots[index]);
+      setInspectCard("pet", "team", index, anchor);
+    }
     return;
   }
   if (state.selected.type === "shopPet") {
-    if (buyPet(state.selected.index, index)) clearSelection();
+    if (buyPet(state.selected.index, index)) {
+      clearSelection();
+      if (state.team[index]) {
+        const anchor = inspectAnchorFromSlot(ui.teamSlots[index]);
+        setInspectCard("pet", "team", index, anchor);
+      }
+    }
     return;
   }
   if (state.selected.type === "shopFood") {
-    if (applyFood(state.selected.index, index)) clearSelection();
+    if (applyFood(state.selected.index, index)) {
+      clearSelection();
+      if (state.team[index]) {
+        const anchor = inspectAnchorFromSlot(ui.teamSlots[index]);
+        setInspectCard("pet", "team", index, anchor);
+      }
+    }
   }
 }
 
 function clickShopPetSlot(index) {
-  if (!state.shopPets[index]) return;
+  if (!state.shopPets[index]) {
+    clearInspectCard();
+    return;
+  }
+  const anchor = inspectAnchorFromSlot(ui.shopPetSlots[index]);
+  setInspectCard("pet", "shopPet", index, anchor);
   if (!state.selected) {
     state.selected = { type: "shopPet", index };
     return;
@@ -1110,7 +1521,12 @@ function clickShopPetSlot(index) {
 
 function clickShopFoodSlot(index) {
   const food = state.shopFood[index];
-  if (!food) return;
+  if (!food) {
+    clearInspectCard();
+    return;
+  }
+  const anchor = inspectAnchorFromSlot(ui.shopFoodSlots[index]);
+  setInspectCard("food", "shopFood", index, anchor);
   if (!state.selected) {
     state.selected = { type: "shopFood", index };
     return;
@@ -1179,6 +1595,33 @@ function handleShopClick(x, y) {
   if (shopFoodIdx !== -1) return clickShopFoodSlot(shopFoodIdx);
 
   clearSelection();
+  clearInspectCard();
+}
+
+function handleBattleClick(x, y) {
+  const battle = state.battle;
+  if (!battle) return;
+
+  if (battle.result && battle.awaitingResultConfirm) {
+    if (battle.resultReadyAt <= 0) finishBattle();
+    return;
+  }
+
+  const friendlyIdx = entityAtPosition(ui.battleFriendlySlots, x, y);
+  if (friendlyIdx !== -1 && battle.friendly[friendlyIdx]) {
+    const anchor = inspectAnchorFromSlot(ui.battleFriendlySlots[friendlyIdx]);
+    setInspectCard("pet", "battleFriendly", friendlyIdx, anchor);
+    return;
+  }
+
+  const enemyIdx = entityAtPosition(ui.battleEnemySlots, x, y);
+  if (enemyIdx !== -1 && battle.enemy[enemyIdx]) {
+    const anchor = inspectAnchorFromSlot(ui.battleEnemySlots[enemyIdx]);
+    setInspectCard("pet", "battleEnemy", enemyIdx, anchor);
+    return;
+  }
+
+  clearInspectCard();
 }
 
 function enemyTeamSizeByRound(round) {
@@ -1215,9 +1658,12 @@ function cloneBattlePet(pet) {
     attack: pet.attack + (pet.tempAttack ?? 0),
     health: pet.health + (pet.tempHealth ?? 0),
     level: pet.level,
+    exp: pet.exp ?? 0,
     ability: pet.ability,
     perk: pet.perk,
     summonOnFaint: pet.summonOnFaint ? deepClone(pet.summonOnFaint) : null,
+    tempAttack: pet.tempAttack ?? 0,
+    tempHealth: pet.tempHealth ?? 0,
   };
 }
 
@@ -1311,6 +1757,7 @@ function summonFromTemplate(template) {
     attack: template.attack,
     health: template.health,
     level: 1,
+    exp: 0,
     ability: null,
     perk: null,
     summonOnFaint: null,
@@ -1510,9 +1957,140 @@ function resolveBattleStep() {
   refreshBattleOutcome(battle);
 }
 
+function setBattleAwaitingResultConfirm(battle) {
+  if (!battle || !battle.result || battle.awaitingResultConfirm) return;
+  battle.awaitingResultConfirm = true;
+  battle.resultReadyAt = BATTLE_RESULT_CONFIRM_DELAY_SECONDS;
+}
+
+function beginBattleLunge(battle) {
+  if (!battle?.anim) return;
+  const anim = battle.anim;
+  anim.phase = "lunge";
+  anim.t = 0;
+  anim.duration = BATTLE_LUNGE_SECONDS;
+  anim.progress = 0;
+  anim.hasShift = false;
+  anim.shiftOffsetsById.friendly = {};
+  anim.shiftOffsetsById.enemy = {};
+  anim.frontOffsetFriendly = 0;
+  anim.frontOffsetEnemy = 0;
+  anim.impactAlpha = 0;
+}
+
+function beginBattleImpact(battle) {
+  if (!battle?.anim) return;
+  const anim = battle.anim;
+  anim.phase = "impact";
+  anim.t = 0;
+  anim.duration = BATTLE_IMPACT_SECONDS;
+  anim.progress = 0;
+}
+
+function settleBattleAfterImpact(battle) {
+  if (!battle?.anim) return;
+  const anim = battle.anim;
+  const beforeFriendlyIds = battle.friendly.map((pet) => pet.id);
+  const beforeEnemyIds = battle.enemy.map((pet) => pet.id);
+  resolveBattleStep();
+  resetBattleFrontOffsets(anim);
+
+  const friendlyShift = battleShiftOffsets(beforeFriendlyIds, battle.friendly);
+  const enemyShift = battleShiftOffsets(beforeEnemyIds, battle.enemy);
+  const hasShift = Object.keys(friendlyShift).length > 0 || Object.keys(enemyShift).length > 0;
+  if (hasShift) {
+    anim.phase = "shift";
+    anim.t = 0;
+    anim.duration = BATTLE_SHIFT_SECONDS;
+    anim.progress = 0;
+    anim.hasShift = true;
+    anim.shiftOffsetsById.friendly = friendlyShift;
+    anim.shiftOffsetsById.enemy = enemyShift;
+    return;
+  }
+
+  anim.phase = "idle";
+  anim.t = 0;
+  anim.duration = 0;
+  anim.progress = 0;
+  anim.hasShift = false;
+  anim.shiftOffsetsById.friendly = {};
+  anim.shiftOffsetsById.enemy = {};
+  if (battle.result) setBattleAwaitingResultConfirm(battle);
+}
+
+function advanceBattleAnimation(battle, dt) {
+  if (!battle?.anim) return;
+  const anim = battle.anim;
+
+  if (battle.result) {
+    battle.resultTime += dt;
+    if (battle.awaitingResultConfirm && battle.resultReadyAt > 0) {
+      battle.resultReadyAt = Math.max(0, battle.resultReadyAt - dt);
+    }
+  }
+
+  if (anim.phase === "idle") {
+    resetBattleFrontOffsets(anim);
+    if (battle.result) {
+      setBattleAwaitingResultConfirm(battle);
+      return;
+    }
+    battle.timer += dt;
+    if (battle.timer >= BATTLE_STEP_SECONDS) {
+      battle.timer -= BATTLE_STEP_SECONDS;
+      beginBattleLunge(battle);
+    }
+    return;
+  }
+
+  anim.t += dt;
+  const duration = Math.max(0.0001, anim.duration || 0.0001);
+  const p = clamp(anim.t / duration, 0, 1);
+  anim.progress = p;
+
+  if (anim.phase === "lunge") {
+    anim.frontOffsetFriendly = BATTLE_FRONT_LUNGE_PX * p;
+    anim.frontOffsetEnemy = -BATTLE_FRONT_LUNGE_PX * p;
+    anim.impactAlpha = 0;
+    if (p >= 1) beginBattleImpact(battle);
+    return;
+  }
+
+  if (anim.phase === "impact") {
+    if (p < 0.5) {
+      const local = p / 0.5;
+      anim.frontOffsetFriendly = BATTLE_FRONT_LUNGE_PX + (BATTLE_FRONT_IMPACT_PX - BATTLE_FRONT_LUNGE_PX) * local;
+      anim.frontOffsetEnemy = -BATTLE_FRONT_LUNGE_PX + (-BATTLE_FRONT_IMPACT_PX + BATTLE_FRONT_LUNGE_PX) * local;
+      anim.impactAlpha = 0.4 + 0.35 * local;
+    } else {
+      const local = (p - 0.5) / 0.5;
+      anim.frontOffsetFriendly = BATTLE_FRONT_IMPACT_PX * (1 - local);
+      anim.frontOffsetEnemy = -BATTLE_FRONT_IMPACT_PX * (1 - local);
+      anim.impactAlpha = 0.75 * (1 - local);
+    }
+    if (p >= 1) settleBattleAfterImpact(battle);
+    return;
+  }
+
+  if (anim.phase === "shift") {
+    if (p >= 1) {
+      anim.phase = "idle";
+      anim.t = 0;
+      anim.duration = 0;
+      anim.progress = 0;
+      anim.hasShift = false;
+      anim.shiftOffsetsById.friendly = {};
+      anim.shiftOffsetsById.enemy = {};
+      if (battle.result) setBattleAwaitingResultConfirm(battle);
+    }
+  }
+}
+
 function finishBattle() {
   const battle = state.battle;
   if (!battle || !battle.result) return;
+  clearInspectCard();
 
   if (battle.result === "win") {
     state.trophies += 1;
@@ -1589,12 +2167,16 @@ function startBattle() {
     timer: 0,
     result: null,
     resultTime: 0,
+    awaitingResultConfirm: false,
+    resultReadyAt: 0,
     roundSnapshot: state.round,
     triggerSeq: 0,
     triggerQueue: [],
     triggerResolved: [],
+    anim: createBattleAnimState(),
   };
   state.selected = null;
+  clearInspectCard();
   state.toast = "";
   state.toastTime = 0;
   state.mode = "battle";
@@ -1604,23 +2186,14 @@ function startBattle() {
   queueCleanupForBothSides(state.battle);
   flushBattleTriggerQueue(state.battle);
   refreshBattleOutcome(state.battle);
+  if (state.battle.result) setBattleAwaitingResultConfirm(state.battle);
 }
 
 function update(dt) {
   if (state.toastTime > 0) state.toastTime = Math.max(0, state.toastTime - dt);
 
   if (state.mode === "battle" && state.battle) {
-    const battle = state.battle;
-    if (!battle.result) {
-      battle.timer += dt;
-      while (battle.timer >= BATTLE_STEP_SECONDS && !battle.result) {
-        battle.timer -= BATTLE_STEP_SECONDS;
-        resolveBattleStep();
-      }
-    } else {
-      battle.resultTime += dt;
-      if (battle.resultTime >= BATTLE_RESULT_HOLD_SECONDS) finishBattle();
-    }
+    advanceBattleAnimation(state.battle, dt);
   }
 }
 
@@ -1700,21 +2273,31 @@ function drawSlot(slot, fill) {
   ctx.stroke();
 }
 
+function fitTextToWidth(text, maxWidth) {
+  const raw = String(text ?? "");
+  if (ctx.measureText(raw).width <= maxWidth) return raw;
+  let trimmed = raw;
+  while (trimmed.length > 1 && ctx.measureText(`${trimmed}...`).width > maxWidth) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  return `${trimmed}...`;
+}
+
 function drawStatToken(x, y, text, fill, width = 68) {
   roundRect(ctx, x, y, width, 24, 8, fill);
   ctx.fillStyle = "#2f425f";
   ctx.font = "700 13px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, x + width / 2, y + 12);
+  ctx.fillText(fitTextToWidth(text, width - 10), x + width / 2, y + 12);
 }
 
 function drawPetCard(slot, pet, options) {
   const { price, frozen } = options;
   const x = slot.x + 9;
-  const y = slot.y + 24;
+  const y = slot.y + 14;
   const w = slot.w - 18;
-  const h = slot.h - 32;
+  const h = slot.h - 20;
 
   roundRect(ctx, x, y, w, h, 14, "rgba(255,255,255,0.95)");
   ctx.strokeStyle = frozen ? "rgba(56, 119, 182, 0.45)" : "rgba(27, 57, 97, 0.24)";
@@ -1729,15 +2312,21 @@ function drawPetCard(slot, pet, options) {
   ctx.fillStyle = "#263f60";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(petDisplayName(pet), x + 86, y + 28);
+  ctx.fillText(petDisplayName(pet), x + 86, y + 24);
 
-  ctx.font = "600 15px 'Trebuchet MS', sans-serif";
+  ctx.font = "600 14px 'Trebuchet MS', sans-serif";
   ctx.fillStyle = "#4a678f";
-  ctx.fillText(t("pet_lv_exp", { level: pet.level, exp: pet.exp }), x + 86, y + 50);
+  ctx.fillText(t("pet_lv_exp", { level: pet.level, exp: pet.exp }), x + 86, y + 44);
 
-  drawStatToken(x + 20, y + 66, t("token_attack", { value: pet.attack }), "#ffd38b");
-  drawStatToken(x + 96, y + 66, t("token_health", { value: pet.health }), "#ffb8af");
-  if (pet.perk) drawStatToken(x + 172, y + 66, perkDisplayName(pet.perk), "#b6e2ba", 82);
+  const statusText = summarizeStatusLabels(petStatusLabels(pet), 2);
+  if (statusText) {
+    ctx.font = "700 12px 'Trebuchet MS', sans-serif";
+    ctx.fillStyle = "#5a7ba0";
+    ctx.fillText(fitTextToWidth(statusText, w - 96), x + 86, y + 60);
+  }
+
+  drawStatToken(x + 20, y + 78, t("token_attack", { value: pet.attack }), "#ffd38b", 68);
+  drawStatToken(x + 96, y + 78, t("token_health", { value: pet.health }), "#ffb8af", 68);
   if (price != null) drawStatToken(x + w - 62, y + 8, `${price}G`, "#ffe88f", 54);
 }
 
@@ -1811,7 +2400,7 @@ function drawShopPanel() {
   ctx.fillStyle = "#355177";
   ctx.font = "700 14px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(t("ui_test_presets"), 820, 614);
+  ctx.fillText(t("ui_test_presets"), DEBUG_BTN_ROW_X, DEBUG_BTN_ROW_Y - 8);
   for (let i = 0; i < ui.debugButtons.length; i += 1) {
     const box = ui.debugButtons[i];
     const preset = debugScenarioButtons[i];
@@ -1829,7 +2418,7 @@ function drawShopPanel() {
   ctx.fillStyle = "rgba(37, 59, 90, 0.9)";
   ctx.font = "600 17px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(t("ui_controls"), 70, 678);
+  ctx.fillText(t("ui_controls"), 70, SHOP_CONTROL_HINT_Y);
 }
 
 function drawMenu() {
@@ -1855,28 +2444,43 @@ function drawMenu() {
   drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
-function drawBattleLine(line, x, y, faceRight) {
-  const cardW = 102;
-  const gap = 12;
+function drawBattleLine(line, slots, faceRight, sideKey, battle) {
+  const anim = battle?.anim;
+  const shiftProgress = anim?.phase === "shift" ? anim.progress : 1;
+  const shiftOffsets = anim?.shiftOffsetsById?.[sideKey] ?? {};
+  const frontOffset = sideKey === "friendly" ? anim?.frontOffsetFriendly ?? 0 : anim?.frontOffsetEnemy ?? 0;
+
   for (let i = 0; i < TEAM_SLOTS; i += 1) {
-    const px = x + i * (cardW + gap);
-    roundRect(ctx, px, y, cardW, 252, 12, "rgba(236, 245, 255, 0.75)");
+    const slot = slots[i];
+    const pet = line[i];
+    let px = slot.x;
+    if (pet && shiftOffsets[pet.id]) {
+      px += shiftOffsets[pet.id] * (1 - shiftProgress);
+    }
+    if (i === 0 && pet) px += frontOffset;
+    const py = slot.y;
+    roundRect(ctx, px, py, slot.w, slot.h, 12, "rgba(236, 245, 255, 0.75)");
     ctx.strokeStyle = "rgba(39, 67, 108, 0.2)";
     ctx.lineWidth = 2;
     ctx.stroke();
-    const pet = line[i];
     if (!pet) continue;
     ctx.fillStyle = pet.color;
     ctx.beginPath();
-    ctx.ellipse(px + 51, y + 86, 34, 28, faceRight ? -0.15 : 0.15, 0, Math.PI * 2);
+    ctx.ellipse(px + 51, py + 86, 34, 28, faceRight ? -0.15 : 0.15, 0, Math.PI * 2);
     ctx.fill();
+
+    if (i === 0 && (anim?.impactAlpha ?? 0) > 0) {
+      roundRect(ctx, px + 4, py + 6, slot.w - 8, slot.h - 12, 10, `rgba(255,255,255,${0.24 * anim.impactAlpha})`);
+    }
+
     ctx.fillStyle = "#2d4b72";
     ctx.font = "700 16px 'Trebuchet MS', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(petDisplayName(pet), px + 51, y + 136);
-    drawStatToken(px + 12, y + 162, t("token_attack", { value: pet.attack }), "#ffd38b", 78);
-    drawStatToken(px + 12, y + 192, t("token_health", { value: pet.health }), "#ffb8af", 78);
-    if (pet.perk) drawStatToken(px + 12, y + 222, perkDisplayName(pet.perk), "#bde4bf", 78);
+    ctx.fillText(petDisplayName(pet), px + 51, py + 136);
+    drawStatToken(px + 12, py + 162, t("token_attack", { value: pet.attack }), "#ffd38b", 78);
+    drawStatToken(px + 12, py + 192, t("token_health", { value: pet.health }), "#ffb8af", 78);
+    const statusText = summarizeStatusLabels(petStatusLabels(pet), 1);
+    if (statusText) drawStatToken(px + 12, py + 222, statusText, "#bde4bf", 78);
   }
 }
 
@@ -1902,8 +2506,8 @@ function drawBattle() {
   ctx.font = "700 22px 'Trebuchet MS', sans-serif";
   ctx.fillText(t("battle_your_team"), 329, 215);
   ctx.fillText(t("battle_enemy_team"), 951, 215);
-  drawBattleLine(battle.friendly, 86, 246, true);
-  drawBattleLine(battle.enemy, 708, 246, false);
+  drawBattleLine(battle.friendly, ui.battleFriendlySlots, true, "friendly", battle);
+  drawBattleLine(battle.enemy, ui.battleEnemySlots, false, "enemy", battle);
 
   roundRect(ctx, 320, 536, 640, 150, 16, "rgba(255,255,255,0.9)");
   ctx.strokeStyle = "rgba(32, 62, 102, 0.2)";
@@ -1914,9 +2518,23 @@ function drawBattle() {
   ctx.textAlign = "left";
   ctx.fillText(t("battle_log"), 344, 564);
   ctx.font = "600 16px 'Trebuchet MS', sans-serif";
+  const logLines = [];
   for (let i = 0; i < battle.log.length; i += 1) {
-    ctx.fillText(`- ${battle.log[i]}`, 344, 592 + i * 20);
+    const wrapped = wrapTextByWidth(`- ${battle.log[i]}`, 602);
+    for (const line of wrapped) logLines.push(line);
   }
+  const logLineHeight = 20;
+  const logClip = { x: 340, y: 578, w: 610, h: 100 };
+  const maxLogLines = Math.max(1, Math.floor(logClip.h / logLineHeight));
+  const renderLines = logLines.length > maxLogLines ? [...logLines.slice(0, maxLogLines - 1), "..."] : logLines;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(logClip.x, logClip.y, logClip.w, logClip.h);
+  ctx.clip();
+  for (let i = 0; i < renderLines.length; i += 1) {
+    ctx.fillText(renderLines[i], 344, 592 + i * logLineHeight);
+  }
+  ctx.restore();
 
   if (battle.result) {
     const text =
@@ -1925,15 +2543,191 @@ function drawBattle() {
         : battle.result === "lose"
           ? t("battle_result_lose")
           : t("battle_result_draw");
-    roundRect(ctx, 520, 90, 240, 64, 14, "rgba(255,255,255,0.95)");
+    roundRect(ctx, 500, 84, 280, 86, 14, "rgba(255,255,255,0.95)");
     ctx.strokeStyle = "rgba(32,62,102,0.2)";
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.fillStyle = battle.result === "win" ? "#2f9256" : battle.result === "lose" ? "#b94949" : "#5f6e86";
     ctx.font = "700 34px 'Trebuchet MS', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(text, 640, 133);
+    ctx.fillText(text, 640, 126);
+
+    ctx.fillStyle = "rgba(48,73,108,0.82)";
+    ctx.font = "600 14px 'Trebuchet MS', sans-serif";
+    ctx.fillText(t("battle_click_to_continue"), 640, 152);
   }
+}
+
+function wrapTextByWidth(text, maxWidth) {
+  const raw = String(text ?? "");
+  if (!raw) return [""];
+
+  const lines = [];
+  const paragraphs = raw.split(/\r?\n/);
+  for (const paragraph of paragraphs) {
+    if (!paragraph) {
+      lines.push("");
+      continue;
+    }
+
+    const useWordSplit = /\s/.test(paragraph);
+    const tokens = useWordSplit ? paragraph.split(/(\s+)/).filter((token) => token.length > 0) : [...paragraph];
+    let current = "";
+
+    for (const token of tokens) {
+      const piece = current ? current + token : token;
+      if (!current || ctx.measureText(piece).width <= maxWidth) {
+        current = piece;
+        continue;
+      }
+
+      lines.push(current.trimEnd());
+      current = "";
+
+      if (ctx.measureText(token).width <= maxWidth) {
+        current = token.trimStart();
+        continue;
+      }
+
+      let chunk = "";
+      for (const ch of token) {
+        const candidate = chunk + ch;
+        if (chunk && ctx.measureText(candidate).width > maxWidth) {
+          lines.push(chunk.trimEnd());
+          chunk = ch;
+        } else {
+          chunk = candidate;
+        }
+      }
+      current = chunk.trimStart();
+    }
+
+    if (current) lines.push(current.trimEnd());
+  }
+
+  return lines.length ? lines : [""];
+}
+
+function drawInspectPanel() {
+  state.inspectPanelRect = null;
+  const inspect = resolveInspectCard();
+  if (!inspect) {
+    if (state.inspectCard) clearInspectCard();
+    return;
+  }
+
+  const rows = [
+    { label: t("info_field_source"), value: inspect.sourceText },
+    { label: t("info_field_type"), value: inspect.kind === "pet" ? t("info_type_pet") : t("info_type_food") },
+    { label: t("info_field_tier"), value: inspect.tier },
+  ];
+
+  if (inspect.kind === "pet") {
+    const pet = inspect.pet;
+    rows.push(
+      { label: t("info_field_attack"), value: pet.attack },
+      { label: t("info_field_health"), value: pet.health },
+      { label: t("info_field_level"), value: pet.level },
+      { label: t("info_field_exp"), value: pet.exp ?? 0 }
+    );
+  }
+
+  const panelW = 362;
+  const contentW = panelW - 32;
+  const rowHeight = 23;
+
+  ctx.font = "600 14px 'Trebuchet MS', sans-serif";
+  let primaryLabel = "";
+  let primaryLines = [];
+  let secondaryLabel = "";
+  let secondaryLines = [];
+
+  if (inspect.kind === "pet") {
+    const pet = inspect.pet;
+    primaryLabel = t("info_field_ability");
+    primaryLines = wrapTextByWidth(
+      `${abilityDisplayName(pet.ability)}: ${abilityDescription(pet.ability, pet.level)}`,
+      contentW
+    ).slice(0, 4);
+    if (pet.perk) {
+      secondaryLabel = t("info_field_perk");
+      secondaryLines = wrapTextByWidth(`${perkDisplayName(pet.perk)}: ${perkDescription(pet.perk)}`, contentW).slice(0, 3);
+    } else {
+      secondaryLabel = t("info_field_perk");
+      secondaryLines = [t("info_value_none")];
+    }
+  } else {
+    const food = inspect.food;
+    primaryLabel = t("info_field_effect");
+    primaryLines = wrapTextByWidth(`${foodEffectDisplayName(food.effect)}: ${foodEffectDescription(food.effect)}`, contentW).slice(0, 5);
+  }
+
+  const baseHeight = 102;
+  const rowHeightTotal = rows.length * rowHeight;
+  const primaryHeight = primaryLines.length * 18 + 24;
+  const secondaryHeight = secondaryLabel ? secondaryLines.length * 18 + 22 : 0;
+  const panelH = clamp(baseHeight + rowHeightTotal + primaryHeight + secondaryHeight + 34, 222, 378);
+
+  const panelX = clamp((inspect.anchorX ?? WIDTH * 0.5) + 8, 18, WIDTH - panelW - 18);
+  const panelY = clamp((inspect.anchorY ?? HEIGHT * 0.5) - panelH * 0.5, 122, HEIGHT - panelH - 16);
+  const contentX = panelX + 16;
+  state.inspectPanelRect = { x: panelX, y: panelY, w: panelW, h: panelH };
+
+  roundRect(ctx, 0, 0, WIDTH, HEIGHT, 0, "rgba(20, 36, 58, 0.16)");
+  roundRect(ctx, panelX, panelY, panelW, panelH, 14, "rgba(255,255,255,0.96)");
+  ctx.strokeStyle = "rgba(31, 58, 95, 0.26)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#4c6586";
+  ctx.font = "700 14px 'Trebuchet MS', sans-serif";
+  ctx.fillText(inspect.title, contentX, panelY + 14);
+
+  ctx.fillStyle = "#29476c";
+  ctx.font = "700 24px 'Trebuchet MS', sans-serif";
+  ctx.fillText(inspect.name, contentX, panelY + 34);
+
+  let y = panelY + 68;
+  for (const row of rows) {
+    ctx.fillStyle = "#5a7395";
+    ctx.font = "700 14px 'Trebuchet MS', sans-serif";
+    ctx.fillText(`${row.label}:`, contentX, y + 2);
+    ctx.fillStyle = "#2a4466";
+    ctx.font = "600 15px 'Trebuchet MS', sans-serif";
+    ctx.fillText(String(row.value), contentX + 116, y + 1);
+    y += rowHeight;
+  }
+
+  ctx.fillStyle = "#5a7395";
+  ctx.font = "700 14px 'Trebuchet MS', sans-serif";
+  ctx.fillText(`${primaryLabel}:`, contentX, y + 2);
+  y += 22;
+  ctx.fillStyle = "#29476c";
+  ctx.font = "600 14px 'Trebuchet MS', sans-serif";
+  for (const line of primaryLines) {
+    ctx.fillText(line, contentX, y);
+    y += 18;
+  }
+
+  if (secondaryLabel) {
+    y += 2;
+    ctx.fillStyle = "#5a7395";
+    ctx.font = "700 14px 'Trebuchet MS', sans-serif";
+    ctx.fillText(`${secondaryLabel}:`, contentX, y + 2);
+    y += 22;
+    ctx.fillStyle = "#29476c";
+    ctx.font = "600 14px 'Trebuchet MS', sans-serif";
+    for (const line of secondaryLines) {
+      ctx.fillText(line, contentX, y);
+      y += 18;
+    }
+  }
+
+  ctx.fillStyle = "rgba(52, 79, 118, 0.74)";
+  ctx.font = "600 12px 'Trebuchet MS', sans-serif";
+  ctx.fillText(t("info_hint_close"), contentX, panelY + panelH - 20);
 }
 
 function drawGameOver() {
@@ -1998,6 +2792,7 @@ function render() {
     drawShopPanel();
   } else if (state.mode === "battle") drawBattle();
   else if (state.mode === "gameover") drawGameOver();
+  drawInspectPanel();
   drawToast();
   drawDragOverlay();
 }
@@ -2010,6 +2805,14 @@ function toWorldCoords(event) {
 }
 
 function handlePrimaryClick(x, y) {
+  const battle = state.mode === "battle" ? state.battle : null;
+  if (battle?.result && battle.awaitingResultConfirm) {
+    if (battle.resultReadyAt <= 0) finishBattle();
+    return;
+  }
+
+  if (consumeInspectModalClick(x, y)) return;
+
   if (pointInRect(x, y, ui.languageBtn)) {
     toggleLanguage();
     return;
@@ -2021,6 +2824,10 @@ function handlePrimaryClick(x, y) {
   }
   if (state.mode === "shop") {
     handleShopClick(x, y);
+    return;
+  }
+  if (state.mode === "battle") {
+    handleBattleClick(x, y);
     return;
   }
   if (state.mode === "gameover") {
@@ -2115,6 +2922,10 @@ function toggleFullscreen() {
 
 function onKeyDown(event) {
   const key = event.key.toLowerCase();
+  if (event.key === "Escape" && state.inspectCard) {
+    clearInspectCard();
+    return;
+  }
   if (key === "l") {
     toggleLanguage();
     return;
@@ -2162,6 +2973,8 @@ function onPointerDown(event) {
     handlePrimaryClick(x, y);
     return;
   }
+
+  if (consumeInspectModalClick(x, y)) return;
 
   const source = dragSourceAtPosition(x, y);
   state.drag = {
@@ -2214,6 +3027,7 @@ function onPointerCancel() {
 function onContextMenu(event) {
   event.preventDefault();
   if (state.mode !== "shop") return;
+  if (inspectModalIsOpen()) return;
   const { x, y } = toWorldCoords(event);
   const petIdx = entityAtPosition(ui.shopPetSlots, x, y);
   if (petIdx !== -1 && state.shopPets[petIdx]) {
@@ -2258,6 +3072,49 @@ function compactPet(pet) {
   };
 }
 
+function compactInspectCard() {
+  const inspect = resolveInspectCard();
+  if (!inspect) return null;
+  if (inspect.kind === "pet") {
+    const pet = inspect.pet;
+    return {
+      kind: "pet",
+      source: inspect.source,
+      sourceText: inspect.sourceText,
+      slot: inspect.slot,
+      anchorX: inspect.anchorX,
+      anchorY: inspect.anchorY,
+      name: petDisplayName(pet),
+      attack: pet.attack,
+      health: pet.health,
+      level: pet.level,
+      exp: pet.exp,
+      tier: inspect.tier,
+      perk: pet.perk ? { name: perkDisplayName(pet.perk), description: perkDescription(pet.perk) } : null,
+      ability: {
+        name: abilityDisplayName(pet.ability),
+        description: abilityDescription(pet.ability, pet.level),
+      },
+    };
+  }
+
+  const food = inspect.food;
+  return {
+    kind: "food",
+    source: inspect.source,
+    sourceText: inspect.sourceText,
+    slot: inspect.slot,
+    anchorX: inspect.anchorX,
+    anchorY: inspect.anchorY,
+    name: foodDisplayName(food),
+    tier: inspect.tier,
+    effect: {
+      name: foodEffectDisplayName(food.effect),
+      description: foodEffectDescription(food.effect),
+    },
+  };
+}
+
 function renderGameToText() {
   const payload = {
     coordinateSystem: "origin=(0,0) top-left; +x right; +y down; canvas=1280x720",
@@ -2272,6 +3129,9 @@ function renderGameToText() {
     shopTier: maxUnlockedTier(),
     shopBuff: { attack: state.shopBuffAttack, health: state.shopBuffHealth },
     selected: state.selected ? { ...state.selected } : null,
+    inspectCard: compactInspectCard(),
+    inspectModalOpen: inspectModalIsOpen(),
+    inspectPanelRect: state.inspectPanelRect ? { ...state.inspectPanelRect } : null,
     drag:
       state.drag && state.drag.source
         ? {
@@ -2299,8 +3159,21 @@ function renderGameToText() {
           friendly: state.battle.friendly.map((pet) => compactPet(pet)),
           enemy: state.battle.enemy.map((pet) => compactPet(pet)),
           result: state.battle.result,
+          awaitingResultConfirm: !!state.battle.awaitingResultConfirm,
+          resultReadyAt: Number((state.battle.resultReadyAt || 0).toFixed(2)),
           resultTime: Number(state.battle.resultTime.toFixed(2)),
           resultHold: BATTLE_RESULT_HOLD_SECONDS,
+          anim: state.battle.anim
+            ? {
+                phase: state.battle.anim.phase,
+                progress: Number((state.battle.anim.progress || 0).toFixed(2)),
+                frontOffsets: {
+                  friendly: Number((state.battle.anim.frontOffsetFriendly || 0).toFixed(2)),
+                  enemy: Number((state.battle.anim.frontOffsetEnemy || 0).toFixed(2)),
+                },
+                hasShift: !!state.battle.anim.hasShift,
+              }
+            : null,
           logTop: state.battle.log.slice(0, 4),
           triggerQueue: (state.battle.triggerQueue || []).slice(0, 8).map((entry) => ({
             phase: entry.phase,

@@ -202,3 +202,75 @@ Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\devel
   - Full regression rerun passed:
     - scenario assertions: 5/5
     - non-scenario actions: 9/9
+
+- Iteration 9: click-card attribute popover implemented (shop + battle).
+- Added inspect system in `src/game.js`:
+  - New inspect state: `state.inspectCard` with source/slot anchor metadata.
+  - New helpers: `setInspectCard`, `clearInspectCard`, `resolveInspectCard`, `compactInspectCard`.
+  - Clicking cards now opens a floating detail panel:
+    - Shop team pets
+    - Shop pet cards
+    - Shop food cards
+    - Battle friendly/enemy cards
+  - Clicking empty area closes panel; `Esc` also closes panel.
+  - Panel auto-clears on turn/battle transitions (`beginShopTurn`, `startBattle`, `finishBattle`, `resetGame`).
+- Added rich bilingual detail copy:
+  - Ability names/descriptions (EN/ZH)
+  - Food effect descriptions (EN/ZH)
+  - Perk descriptions (EN/ZH)
+  - Source/type/tier/stat labels + close hint.
+- Rendering updates:
+  - Added battle slot geometry constants and reused them for both drawing and click hit-testing.
+  - Added `drawInspectPanel()` overlay rendering with wrapped detail text.
+- State observability:
+  - Exposed current inspected card in `render_game_to_text` as `inspectCard` payload.
+- Fixes found during review loop:
+  - Battle inspect panel showed `Exp: undefined` for battle clones; fixed by carrying `exp` into `cloneBattlePet` and summon templates.
+  - Summoned token tier display normalized (fallback tier from 0 to 1).
+- Added regression action payload:
+  - `test/actions-card-inspect.json` (covers shop inspect, battle inspect, close behavior, and final deterministic inspect snapshot).
+- Validation completed:
+  - `node.exe --check src/game.js` passed.
+  - Targeted inspect run passed:
+    - `output/web-game/card-inspect/` (state includes non-null `inspectCard`, no error artifacts).
+  - Extra zh visual check passed:
+    - `output/web-game/card-inspect-zh/shot-0.png` shows Chinese inspect content.
+  - Full regression rerun passed:
+    - `node.exe ./scripts/run_full_regression.mjs`
+    - scenario assertions: 5/5 pass
+    - action regressions: 10/10 pass (includes new `actions-card-inspect.json`).
+- Remaining follow-up suggestions:
+  - Improve English wrapping to prefer word boundaries (current wrapper is char-based, readable but can split words).
+  - Optionally add keyboard shortcut to cycle inspect targets in battle for faster debugging.
+
+- Iteration 10: interaction/battle UX pass aligned to 6-point plan.
+- Core gameplay/UI updates in `src/game.js`:
+  - Moved shop controls to bottom centered row (`Reroll / Freeze / Sell / End Turn`) and kept keyboard shortcuts unchanged.
+  - Added persistent card status badges for active effects (perk / honey-bee summon / temp buff) on shop and battle cards.
+  - Battle result now requires explicit click confirmation (`awaitingResultConfirm`) before returning to next shop round.
+  - Combat log rendering now wraps + clips inside panel bounds with dynamic max-line calculation and overflow ellipsis.
+  - Added lightweight battle animation pipeline (lunge -> impact -> resolve -> shift -> idle) with front offsets and backline shift interpolation.
+  - Inspect panel upgraded to strict modal behavior:
+    - click inside panel: consume only
+    - click outside panel: close and consume (no click-through)
+    - shop pointer down path also respects modal interception before drag/select logic.
+  - Added modal backdrop tint while inspect panel is open.
+- Regression/action updates:
+  - Updated bottom-button coordinates in action payloads (shop/battle/scenario files from prior pass).
+  - Adjusted `test/actions-scenario-choco.json` for strict modal timing (separate close-click and apply-click).
+- Validation completed:
+  - `node.exe --check src/game.js` passed.
+  - `node.exe scripts/run_scenario_assertions.mjs` passed (5/5).
+  - `node.exe scripts/run_full_regression.mjs` passed:
+    - scenario assertions: 5/5 pass
+    - action regressions: 10/10 pass
+  - Targeted behavior checks:
+    - result-confirm hold verified: `output/web-game/verify-result-confirm/state-0.json` shows `mode=battle`, `awaitingResultConfirm=true`; screenshot shows "Click anywhere to continue".
+    - strict inspect modal verified: `output/web-game/verify-modal-block/state-0.json` remains `mode=shop`, `battle=null` after clicking End Turn while modal open (no click-through).
+    - animation mid-phase verified: `output/web-game/verify-anim7/state-0.json` shows `battle.anim.phase=\"shift\"`, `hasShift=true`.
+  - Visual inspection completed for key screenshots:
+    - `output/web-game/full-regression/actions-shop-features/shot-0.png`
+    - `output/web-game/full-regression/actions-food-battle/shot-0.png`
+    - `output/web-game/full-regression/actions-battle-mid/shot-0.png`
+    - `output/web-game/full-regression/actions-round-complete/shot-0.png`
+    - `output/web-game/full-regression/actions-card-inspect/shot-0.png`

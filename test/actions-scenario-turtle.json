@@ -4,7 +4,7 @@
     { "buttons": [], "frames": 8 },
     { "buttons": ["up"], "frames": 2 },
     { "buttons": [], "frames": 8 },
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 1174, "mouse_y": 376 },
-    { "buttons": [], "frames": 28 }
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 916, "mouse_y": 644 },
+    { "buttons": [], "frames": 170 }
   ]
 }

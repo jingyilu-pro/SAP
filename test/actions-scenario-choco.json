@@ -7,6 +7,8 @@
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 170, "mouse_y": 525 },
     { "buttons": [], "frames": 2 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 170, "mouse_y": 190 },
+    { "buttons": [], "frames": 2 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 170, "mouse_y": 190 },
     { "buttons": [], "frames": 10 }
   ]
 }

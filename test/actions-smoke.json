@@ -10,7 +10,9 @@
     { "buttons": [], "frames": 4 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 406, "mouse_y": 190 },
     { "buttons": [], "frames": 8 },
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 1174, "mouse_y": 376 },
-    { "buttons": [], "frames": 220 }
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 916, "mouse_y": 644 },
+    { "buttons": [], "frames": 220 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 640, "mouse_y": 120 },
+    { "buttons": [], "frames": 40 }
   ]
 }
