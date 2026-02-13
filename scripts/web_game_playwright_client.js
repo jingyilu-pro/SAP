@@ -141,12 +141,21 @@ async function getCanvasHandle(page) {
 }
 
 async function captureCanvasPngBase64(canvas) {
-  return canvas.evaluate((c) => {
-    if (!c || typeof c.toDataURL !== "function") return "";
-    const data = c.toDataURL("image/png");
-    const idx = data.indexOf(",");
-    return idx === -1 ? "" : data.slice(idx + 1);
-  });
+  if (!canvas) return "";
+  try {
+    return await canvas.evaluate((c) => {
+      try {
+        if (!c || typeof c.toDataURL !== "function") return "";
+        const data = c.toDataURL("image/png");
+        const idx = data.indexOf(",");
+        return idx === -1 ? "" : data.slice(idx + 1);
+      } catch {
+        return "";
+      }
+    });
+  } catch {
+    return "";
+  }
 }
 
 async function isCanvasTransparent(canvas) {

@@ -309,3 +309,9 @@ Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\devel
     - `output/web-game/http-icon-render/shot-0.png` confirms real icon rendering in served mode.
 - Notes for next iteration:
   - If needed, remove `file:` icon fallback once regression capture pipeline stops relying on canvas `toDataURL` under file URLs.
+- Iteration 12: fixed icon rendering fallback behavior.
+  - Removed protocol-based icon disable in `src/game.js` so game always attempts to render catalog icons.
+  - Hardened Playwright capture path in `scripts/web_game_playwright_client.js` to gracefully handle tainted-canvas `toDataURL` errors and fallback to screenshot capture.
+  - Verified icon rendering in both:
+    - file URL run: `output/web-game/file-icon-render/shot-0.png`
+    - http URL run: `output/web-game/http-icon-render-2/shot-0.png`

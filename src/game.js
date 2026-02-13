@@ -504,7 +504,6 @@ const GAME_INDEXES = buildGameIndexes(GAME_DATA);
 const PACK_KEYS = GAME_DATA.packs.map((pack) => pack.key);
 const DEFAULT_PACK_KEY = PACK_KEYS.includes("pack1") ? "pack1" : PACK_KEYS[0] ?? "pack1";
 const assetImageCache = new Map();
-const ALLOW_ICON_IMAGES = window.location.protocol !== "file:";
 
 function t(key, params = {}) {
   const current = I18N[state.language] || I18N.en;
@@ -2425,7 +2424,6 @@ function roundRect(target, x, y, w, h, r, fillStyle) {
 }
 
 function getImageRecord(src) {
-  if (!ALLOW_ICON_IMAGES) return null;
   if (!src) return null;
   let record = assetImageCache.get(src);
   if (record) return record;
