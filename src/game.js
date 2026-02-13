@@ -30,6 +30,266 @@ const FAINT_ABILITIES = new Set([
   "faint_give_melon_friend_behind",
   "faint_summon_zombie",
 ]);
+const LANGUAGE_STORAGE_KEY = "sap_clone_language";
+const SUPPORTED_LANGUAGES = new Set(["en", "zh"]);
+
+const PET_NAME_ZH = {
+  ant: "蚂蚁",
+  fish: "鱼",
+  beaver: "海狸",
+  cricket: "蟋蟀",
+  mosquito: "蚊子",
+  otter: "水獭",
+  swan: "天鹅",
+  horse: "马",
+  flamingo: "火烈鸟",
+  camel: "骆驼",
+  kangaroo: "袋鼠",
+  giraffe: "长颈鹿",
+  rabbit: "兔子",
+  peacock: "孔雀",
+  dodo: "渡渡鸟",
+  penguin: "企鹅",
+  turtle: "海龟",
+  zombie_cricket: "僵尸蟋蟀",
+  bee: "蜜蜂",
+};
+
+const FOOD_NAME_ZH = {
+  apple: "苹果",
+  honey: "蜂蜜",
+  meat: "牛排",
+  garlic: "蒜头",
+  pear: "梨",
+  salad: "沙拉",
+  cupcake: "纸杯蛋糕",
+  canned_food: "罐头",
+  melon: "蜜瓜",
+  chocolate: "巧克力",
+};
+
+const I18N = {
+  en: {
+    language_name: "English",
+    language_switch_target: "中文",
+    side_friendly: "Friendly",
+    side_enemy: "Enemy",
+    top_round: ({ round }) => `Round ${round}`,
+    top_gold: ({ gold }) => `Gold ${gold}`,
+    top_lives: ({ lives }) => `Lives ${lives}`,
+    top_trophy: ({ trophies }) => `Trophy ${trophies}`,
+    top_max: "MAX",
+    top_level_xp: ({ level, xp }) => `Lvl ${level} XP ${xp}`,
+    top_tier_shop: ({ tier }) => `Tier ${tier} Shop`,
+    ui_team_front: "Team (front -> back)",
+    ui_shop_pets: "Shop Pets",
+    ui_shop_food: "Shop Food",
+    ui_reroll: "Reroll (R)",
+    ui_freeze: "Freeze (X)",
+    ui_sell: "Sell (S)",
+    ui_end_turn: "End Turn (E)",
+    ui_test_presets: "Test Presets",
+    ui_controls: "Controls: click/drag cards, drag pet to Sell, right click shop to freeze, F fullscreen, L language",
+    preset_chocolate: "Choco",
+    preset_melon: "Melon",
+    preset_dodo: "Dodo",
+    preset_penguin: "Peng",
+    preset_turtle: "Turtle",
+    menu_title: "Super Auto Pets",
+    menu_subtitle: "Steam-inspired auto battler clone",
+    menu_line1: "Build your team in shop, then auto-battle each round.",
+    menu_line2: "Merge pets, feed food, and reach 10 trophies before 0 lives.",
+    menu_start: "Start Game",
+    battle_phase: "Battle Phase",
+    battle_your_team: "Your Team",
+    battle_enemy_team: "Enemy Team",
+    battle_log: "Combat Log",
+    battle_result_win: "Victory!",
+    battle_result_lose: "Defeat!",
+    battle_result_draw: "Draw!",
+    over_win: "You Win!",
+    over_lose: "Game Over",
+    over_round: ({ round }) => `Round reached: ${round}`,
+    over_trophies: ({ trophies, max }) => `Trophies: ${trophies} / ${max}`,
+    over_lives: ({ lives }) => `Lives left: ${lives}`,
+    over_restart: "Play Again",
+    pet_lv_exp: ({ level, exp }) => `Lv ${level}  Exp ${exp}`,
+    token_attack: ({ value }) => `A ${value}`,
+    token_health: ({ value }) => `H ${value}`,
+    drag_default: "drag",
+    drag_team: "team",
+    drag_pet: "pet",
+    drag_food: "food",
+    perk_meat: "MEAT",
+    perk_garlic: "GARLIC",
+    perk_melon: "MELON",
+    food_effect_stat_1_1: "stat +1/+1",
+    food_effect_summon_bee: "summon bee",
+    food_effect_perk_meat: "perk meat",
+    food_effect_perk_garlic: "perk garlic",
+    food_effect_stat_2_2: "stat +2/+2",
+    food_effect_team_random_buff_1_1: "buff 2 allies +1/+1",
+    food_effect_temp_3_3: "temp +3/+3",
+    food_effect_shop_buff_2_1: "shop buff +2/+1",
+    food_effect_perk_melon: "perk melon",
+    food_effect_exp_1: "exp +1",
+    toast_language_switched: ({ language }) => `Language switched: ${language}.`,
+    toast_level_up_player: ({ level }) => `Level up! Reached level ${level}.`,
+    toast_not_enough_gold_reroll: "Not enough gold for reroll.",
+    toast_no_pet_to_sell: "No pet to sell.",
+    toast_sold_pet_gold: "Sold pet for 1 gold.",
+    toast_pet_level_buff: ({ pet, buff }) => `${pet} leveled: team buff +${buff}/+${buff}.`,
+    toast_buffed_shop_pet: ({ pet }) => `${pet} buffed a shop pet.`,
+    toast_scenario_chocolate: "Scenario loaded: Chocolate -> Fish level up.",
+    toast_scenario_melon: "Scenario loaded: Melon block test.",
+    toast_scenario_dodo: "Scenario loaded: Dodo start-battle buff.",
+    toast_scenario_penguin: "Scenario loaded: Penguin end-turn buff.",
+    toast_scenario_turtle: "Scenario loaded: Turtle faint -> melon.",
+    toast_empty_shop_slot: "Empty shop slot.",
+    toast_not_enough_gold: "Not enough gold.",
+    toast_cannot_stack: "Cannot stack different pets.",
+    toast_joined_team: ({ pet }) => `${pet} joined the team.`,
+    toast_merged_stats: ({ pet }) => `${pet} merged and gained stats.`,
+    toast_empty_food_slot: "Empty food slot.",
+    toast_select_pet_first: "Select a pet first.",
+    toast_pet_ate_food: ({ pet, food }) => `${pet} ate ${food}.`,
+    toast_used_food: ({ food }) => `Used ${food}.`,
+    toast_select_shop_slot: "Select a shop slot first.",
+    toast_only_shop_freeze: "Only shop slots can be frozen.",
+    toast_select_team_to_sell: "Select a team pet to sell.",
+    toast_victory_trophy: "Victory! +1 trophy.",
+    toast_defeat_life: ({ loss }) => `Defeat! -${loss} life${loss > 1 ? "s" : ""}.`,
+    toast_draw: "Draw.",
+    toast_place_pet: "Place at least one pet.",
+    log_trigger_guard: "Trigger queue guard reached.",
+    log_both_fainted: "Both teams fainted.",
+    log_enemy_wins: "Enemy wins this round.",
+    log_you_win: "You win this round.",
+    log_dodo_buff: ({ side, target, bonus }) => `${side} Dodo buffs ${target} +${bonus} attack.`,
+    log_ping: ({ side, actor, target }) => `${side} ${actor} pings ${target} for 1.`,
+    log_melon_block: ({ defender }) => `${defender}'s Melon blocks the hit.`,
+    log_horse_buff: ({ side, bonus }) => `${side} Horse buffs summoned ally +${bonus} attack.`,
+    log_ant_buff: ({ side, target }) => `${side} Ant buffs ${target}.`,
+    log_flamingo_buff: ({ side }) => `${side} Flamingo buffs rear ally.`,
+    log_turtle_melon: ({ side, target }) => `${side} Turtle gives Melon to ${target}.`,
+    log_cricket_summon: ({ side }) => `${side} Cricket summons Zombie.`,
+    log_pet_summon: ({ side, pet, summon }) => `${side} ${pet} summons ${summon}.`,
+    log_camel_buff: ({ side }) => `${side} Camel buffs friend behind.`,
+    log_peacock_hurt: ({ side }) => `${side} Peacock gains attack from hurt.`,
+    log_trade: ({ attacker, defender }) => `${attacker} trades with ${defender}.`,
+    log_battle_started: "Battle started.",
+  },
+  zh: {
+    language_name: "中文",
+    language_switch_target: "EN",
+    side_friendly: "友方",
+    side_enemy: "敌方",
+    top_round: ({ round }) => `第 ${round} 回合`,
+    top_gold: ({ gold }) => `金币 ${gold}`,
+    top_lives: ({ lives }) => `生命 ${lives}`,
+    top_trophy: ({ trophies }) => `奖杯 ${trophies}`,
+    top_max: "满级",
+    top_level_xp: ({ level, xp }) => `等级 ${level} 经验 ${xp}`,
+    top_tier_shop: ({ tier }) => `${tier} 级商店`,
+    ui_team_front: "队伍（前排 -> 后排）",
+    ui_shop_pets: "宠物商店",
+    ui_shop_food: "食物商店",
+    ui_reroll: "刷新 (R)",
+    ui_freeze: "冻结 (X)",
+    ui_sell: "出售 (S)",
+    ui_end_turn: "结束回合 (E)",
+    ui_test_presets: "测试预设",
+    ui_controls: "操作：点击/拖拽卡片，拖拽宠物到出售，右键冻结商店，F 全屏，L 语言",
+    preset_chocolate: "巧克力",
+    preset_melon: "蜜瓜",
+    preset_dodo: "渡渡鸟",
+    preset_penguin: "企鹅",
+    preset_turtle: "海龟",
+    menu_title: "超级自动宠物",
+    menu_subtitle: "受 Steam 启发的自走对战复刻",
+    menu_line1: "在商店构建队伍，然后每回合自动战斗。",
+    menu_line2: "合成宠物、喂食物，在生命归零前拿到 10 个奖杯。",
+    menu_start: "开始游戏",
+    battle_phase: "战斗阶段",
+    battle_your_team: "我方队伍",
+    battle_enemy_team: "敌方队伍",
+    battle_log: "战斗日志",
+    battle_result_win: "胜利！",
+    battle_result_lose: "失败！",
+    battle_result_draw: "平局！",
+    over_win: "你赢了！",
+    over_lose: "游戏结束",
+    over_round: ({ round }) => `到达回合：${round}`,
+    over_trophies: ({ trophies, max }) => `奖杯：${trophies} / ${max}`,
+    over_lives: ({ lives }) => `剩余生命：${lives}`,
+    over_restart: "再来一局",
+    pet_lv_exp: ({ level, exp }) => `等级 ${level} 经验 ${exp}`,
+    token_attack: ({ value }) => `攻 ${value}`,
+    token_health: ({ value }) => `血 ${value}`,
+    drag_default: "拖拽",
+    drag_team: "队伍",
+    drag_pet: "宠物",
+    drag_food: "食物",
+    perk_meat: "肉",
+    perk_garlic: "蒜",
+    perk_melon: "蜜瓜",
+    food_effect_stat_1_1: "属性 +1/+1",
+    food_effect_summon_bee: "召唤蜜蜂",
+    food_effect_perk_meat: "获得肉",
+    food_effect_perk_garlic: "获得蒜",
+    food_effect_stat_2_2: "属性 +2/+2",
+    food_effect_team_random_buff_1_1: "随机 2 友军 +1/+1",
+    food_effect_temp_3_3: "本回合 +3/+3",
+    food_effect_shop_buff_2_1: "商店宠物 +2/+1",
+    food_effect_perk_melon: "获得蜜瓜",
+    food_effect_exp_1: "经验 +1",
+    toast_language_switched: ({ language }) => `语言已切换：${language}。`,
+    toast_level_up_player: ({ level }) => `升级！到达等级 ${level}。`,
+    toast_not_enough_gold_reroll: "金币不足，无法刷新。",
+    toast_no_pet_to_sell: "没有可出售的宠物。",
+    toast_sold_pet_gold: "出售宠物，获得 1 金币。",
+    toast_pet_level_buff: ({ pet, buff }) => `${pet} 升级：全队 +${buff}/+${buff}。`,
+    toast_buffed_shop_pet: ({ pet }) => `${pet} 强化了一个商店宠物。`,
+    toast_scenario_chocolate: "已加载预设：巧克力让鱼升级。",
+    toast_scenario_melon: "已加载预设：蜜瓜护盾测试。",
+    toast_scenario_dodo: "已加载预设：渡渡鸟开战加攻。",
+    toast_scenario_penguin: "已加载预设：企鹅回合末增益。",
+    toast_scenario_turtle: "已加载预设：海龟遗言给蜜瓜。",
+    toast_empty_shop_slot: "该商店位置为空。",
+    toast_not_enough_gold: "金币不足。",
+    toast_cannot_stack: "不同宠物不能直接合成。",
+    toast_joined_team: ({ pet }) => `${pet} 加入了队伍。`,
+    toast_merged_stats: ({ pet }) => `${pet} 合成并提升了属性。`,
+    toast_empty_food_slot: "该食物位置为空。",
+    toast_select_pet_first: "请先选择宠物。",
+    toast_pet_ate_food: ({ pet, food }) => `${pet} 吃下了 ${food}。`,
+    toast_used_food: ({ food }) => `使用了 ${food}。`,
+    toast_select_shop_slot: "请先选择商店格子。",
+    toast_only_shop_freeze: "只能冻结商店格子。",
+    toast_select_team_to_sell: "请选择一个队伍宠物进行出售。",
+    toast_victory_trophy: "胜利！+1 奖杯。",
+    toast_defeat_life: ({ loss }) => `失败！-${loss} 生命。`,
+    toast_draw: "平局。",
+    toast_place_pet: "请至少放置一只宠物。",
+    log_trigger_guard: "触发队列达到保护上限。",
+    log_both_fainted: "双方队伍同时阵亡。",
+    log_enemy_wins: "敌方赢下了本回合。",
+    log_you_win: "你赢下了本回合。",
+    log_dodo_buff: ({ side, target, bonus }) => `${side} 渡渡鸟给 ${target} +${bonus} 攻击。`,
+    log_ping: ({ side, actor, target }) => `${side} ${actor} 对 ${target} 造成 1 点伤害。`,
+    log_melon_block: ({ defender }) => `${defender} 的蜜瓜抵挡了伤害。`,
+    log_horse_buff: ({ side, bonus }) => `${side} 马给召唤友军 +${bonus} 攻击。`,
+    log_ant_buff: ({ side, target }) => `${side} 蚂蚁强化了 ${target}。`,
+    log_flamingo_buff: ({ side }) => `${side} 火烈鸟强化了后排友军。`,
+    log_turtle_melon: ({ side, target }) => `${side} 海龟给 ${target} 提供了蜜瓜。`,
+    log_cricket_summon: ({ side }) => `${side} 蟋蟀召唤了僵尸蟋蟀。`,
+    log_pet_summon: ({ side, pet, summon }) => `${side} ${pet} 召唤了 ${summon}。`,
+    log_camel_buff: ({ side }) => `${side} 骆驼强化了身后友军。`,
+    log_peacock_hurt: ({ side }) => `${side} 孔雀受伤后增加了攻击。`,
+    log_trade: ({ attacker, defender }) => `${attacker} 与 ${defender} 互换攻击。`,
+    log_battle_started: "战斗开始。",
+  },
+};
 
 const petPool = [
   { kind: "ant", name: "Ant", tier: 1, attack: 2, health: 1, color: "#d98f4e", ability: "faint_buff_random_ally" },
@@ -64,6 +324,65 @@ const foodPool = [
   { kind: "chocolate", name: "Chocolate", tier: 3, color: "#9f7a58", effect: "exp_1" },
 ];
 
+function t(key, params = {}) {
+  const current = I18N[state.language] || I18N.en;
+  const fallback = I18N.en[key];
+  const value = current[key] ?? fallback ?? key;
+  return typeof value === "function" ? value(params) : value;
+}
+
+function petDisplayName(pet) {
+  if (!pet) return "";
+  if (state.language !== "zh") return pet.name;
+  return PET_NAME_ZH[pet.kind] ?? pet.name;
+}
+
+function foodDisplayName(food) {
+  if (!food) return "";
+  if (state.language !== "zh") return food.name;
+  return FOOD_NAME_ZH[food.kind] ?? food.name;
+}
+
+function summonDisplayNameFromTemplate(template) {
+  if (!template) return "";
+  if (state.language !== "zh") return template.name;
+  return PET_NAME_ZH[template.kind] ?? template.name;
+}
+
+function perkDisplayName(perk) {
+  if (!perk) return "";
+  return t(`perk_${perk}`);
+}
+
+function foodEffectDisplayName(effect) {
+  return t(`food_effect_${effect}`);
+}
+
+function persistLanguagePreference() {
+  try {
+    window.localStorage?.setItem(LANGUAGE_STORAGE_KEY, state.language);
+  } catch {
+    // Ignore persistence failures (private mode / blocked storage).
+  }
+}
+
+function restoreLanguagePreference() {
+  try {
+    const saved = window.localStorage?.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved && SUPPORTED_LANGUAGES.has(saved)) {
+      state.language = saved;
+    }
+  } catch {
+    // Ignore restore failures and keep default language.
+  }
+}
+
+function toggleLanguage() {
+  state.language = state.language === "en" ? "zh" : "en";
+  persistLanguagePreference();
+  pushToast(t("toast_language_switched", { language: t("language_name") }));
+}
+
 function rect(x, y, w, h) {
   return { x, y, w, h };
 }
@@ -84,19 +403,21 @@ const ui = {
   sellBtn: rect(1096, 272, 154, 56),
   endTurnBtn: rect(1096, 342, 154, 68),
   restartBtn: rect(530, 420, 220, 64),
+  languageBtn: rect(1134, 42, 104, 50),
   debugButtons: buildRow(820, 622, 5, 82, 36, 10),
 };
 
 const debugScenarioButtons = [
-  { key: "chocolate", label: "Choco" },
-  { key: "melon", label: "Melon" },
-  { key: "dodo", label: "Dodo" },
-  { key: "penguin", label: "Peng" },
-  { key: "turtle", label: "Turtle" },
+  { key: "chocolate" },
+  { key: "melon" },
+  { key: "dodo" },
+  { key: "penguin" },
+  { key: "turtle" },
 ];
 
 const state = {
   mode: "menu",
+  language: "en",
   rngSeed: Math.floor(Date.now() % 2147483647),
   nextId: 1,
   round: 1,
@@ -185,7 +506,7 @@ function gainPlayerXp(value) {
   while (state.playerXp >= xpThresholdForPlayerLevel(state.playerLevel) && state.playerLevel < 5) {
     state.playerXp -= xpThresholdForPlayerLevel(state.playerLevel);
     state.playerLevel += 1;
-    pushToast(`Level up! Reached level ${state.playerLevel}.`);
+    pushToast(t("toast_level_up_player", { level: state.playerLevel }));
   }
 }
 
@@ -243,7 +564,7 @@ function pushToast(message) {
 function rerollShop(free = false) {
   if (!free) {
     if (state.gold < REROLL_COST) {
-      pushToast("Not enough gold for reroll.");
+      pushToast(t("toast_not_enough_gold_reroll"));
       return false;
     }
     state.gold -= REROLL_COST;
@@ -309,7 +630,7 @@ function resetGame() {
 function onSellTeamPet(slotIndex) {
   const pet = state.team[slotIndex];
   if (!pet) {
-    pushToast("No pet to sell.");
+    pushToast(t("toast_no_pet_to_sell"));
     return false;
   }
 
@@ -330,7 +651,7 @@ function onSellTeamPet(slotIndex) {
   if (state.selected && state.selected.type === "team" && state.selected.index === slotIndex) {
     state.selected = null;
   }
-  pushToast("Sold pet for 1 gold.");
+  pushToast(t("toast_sold_pet_gold"));
   return true;
 }
 
@@ -358,7 +679,12 @@ function applyLevelUpAbility(pet) {
       ally.attack += buffAmount;
       ally.health += buffAmount;
     }
-    pushToast(`${pet.name} leveled: team buff +${buffAmount}/+${buffAmount}.`);
+    pushToast(
+      t("toast_pet_level_buff", {
+        pet: petDisplayName(pet),
+        buff: buffAmount,
+      })
+    );
   }
 }
 
@@ -381,7 +707,7 @@ function triggerBuyAbility(pet) {
     const target = randomChoice(options);
     target.attack += pet.level;
     target.health += pet.level;
-    pushToast(`${pet.name} buffed a shop pet.`);
+    pushToast(t("toast_buffed_shop_pet", { pet: petDisplayName(pet) }));
   }
 }
 
@@ -441,7 +767,7 @@ function flushBattleTriggerQueue(battle, maxSteps = 300) {
 
   if (steps >= maxSteps && battle.triggerQueue.length) {
     battle.triggerQueue.length = 0;
-    appendBattleLog("Trigger queue guard reached.");
+    appendBattleLog(t("log_trigger_guard"));
   }
 }
 
@@ -489,8 +815,8 @@ function queueCleanupTrigger(battle, team, sideLabel) {
 }
 
 function queueCleanupForBothSides(battle) {
-  queueCleanupTrigger(battle, battle.friendly, "Friendly");
-  queueCleanupTrigger(battle, battle.enemy, "Enemy");
+  queueCleanupTrigger(battle, battle.friendly, t("side_friendly"));
+  queueCleanupTrigger(battle, battle.enemy, t("side_enemy"));
 }
 
 function refreshBattleOutcome(battle) {
@@ -499,17 +825,17 @@ function refreshBattleOutcome(battle) {
   const right = battle.enemy;
   if (!left.length && !right.length) {
     battle.result = "draw";
-    appendBattleLog("Both teams fainted.");
+    appendBattleLog(t("log_both_fainted"));
     return true;
   }
   if (!left.length) {
     battle.result = "lose";
-    appendBattleLog("Enemy wins this round.");
+    appendBattleLog(t("log_enemy_wins"));
     return true;
   }
   if (!right.length) {
     battle.result = "win";
-    appendBattleLog("You win this round.");
+    appendBattleLog(t("log_you_win"));
     return true;
   }
   return false;
@@ -569,7 +895,7 @@ function loadDebugScenario(name) {
     state.team[1] = ant;
     state.shopFood[0] = createFood("chocolate");
     state.shopFood[1] = createFood("apple");
-    pushToast("Scenario loaded: Chocolate -> Fish level up.");
+    pushToast(t("toast_scenario_chocolate"));
     return true;
   }
 
@@ -580,7 +906,7 @@ function loadDebugScenario(name) {
     state.team[0] = fish;
     state.team[1] = createPet("cricket");
     state.debugEnemyPreset = [{ kind: "beaver", attack: 11, health: 2, level: 1 }];
-    pushToast("Scenario loaded: Melon block test.");
+    pushToast(t("toast_scenario_melon"));
     return true;
   }
 
@@ -589,7 +915,7 @@ function loadDebugScenario(name) {
     state.team[0] = createPet("fish");
     state.team[1] = createPet("dodo");
     state.debugEnemyPreset = [{ kind: "beaver", attack: 3, health: 4, level: 1 }];
-    pushToast("Scenario loaded: Dodo start-battle buff.");
+    pushToast(t("toast_scenario_dodo"));
     return true;
   }
 
@@ -603,7 +929,7 @@ function loadDebugScenario(name) {
     state.team[0] = fish;
     state.team[1] = createPet("penguin");
     state.debugEnemyPreset = [{ kind: "ant", attack: 2, health: 1, level: 1 }];
-    pushToast("Scenario loaded: Penguin end-turn buff.");
+    pushToast(t("toast_scenario_penguin"));
     return true;
   }
 
@@ -613,7 +939,7 @@ function loadDebugScenario(name) {
     state.team[1] = createPet("fish");
     state.team[2] = createPet("horse");
     state.debugEnemyPreset = [{ kind: "beaver", attack: 7, health: 2, level: 1 }];
-    pushToast("Scenario loaded: Turtle faint -> melon.");
+    pushToast(t("toast_scenario_turtle"));
     return true;
   }
 
@@ -625,16 +951,16 @@ window.__debugLoadScenario = (name) => loadDebugScenario(String(name || "").toLo
 function buyPet(shopIndex, teamIndex) {
   const pet = state.shopPets[shopIndex];
   if (!pet) {
-    pushToast("Empty shop slot.");
+    pushToast(t("toast_empty_shop_slot"));
     return false;
   }
   if (state.gold < PET_COST) {
-    pushToast("Not enough gold.");
+    pushToast(t("toast_not_enough_gold"));
     return false;
   }
   const target = state.team[teamIndex];
   if (target && target.kind !== pet.kind) {
-    pushToast("Cannot stack different pets.");
+    pushToast(t("toast_cannot_stack"));
     return false;
   }
 
@@ -644,31 +970,31 @@ function buyPet(shopIndex, teamIndex) {
   if (!target) {
     state.team[teamIndex] = pet;
     triggerBuyAbility(pet);
-    pushToast(`${pet.name} joined the team.`);
+    pushToast(t("toast_joined_team", { pet: petDisplayName(pet) }));
     return true;
   }
 
   mergePet(target, pet);
   triggerBuyAbility(pet);
-  pushToast(`${target.name} merged and gained stats.`);
+  pushToast(t("toast_merged_stats", { pet: petDisplayName(target) }));
   return true;
 }
 
 function applyFood(foodIndex, teamIndex) {
   const food = state.shopFood[foodIndex];
   if (!food) {
-    pushToast("Empty food slot.");
+    pushToast(t("toast_empty_food_slot"));
     return false;
   }
 
   const targetless = isTargetlessFood(food);
   const pet = teamIndex >= 0 ? state.team[teamIndex] : null;
   if (!targetless && !pet) {
-    pushToast("Select a pet first.");
+    pushToast(t("toast_select_pet_first"));
     return false;
   }
   if (state.gold < FOOD_COST) {
-    pushToast("Not enough gold.");
+    pushToast(t("toast_not_enough_gold"));
     return false;
   }
 
@@ -710,8 +1036,8 @@ function applyFood(foodIndex, teamIndex) {
   }
 
   if (pet) applyFriendEatBonus(pet);
-  if (pet) pushToast(`${pet.name} ate ${food.name}.`);
-  else pushToast(`Used ${food.name}.`);
+  if (pet) pushToast(t("toast_pet_ate_food", { pet: petDisplayName(pet), food: foodDisplayName(food) }));
+  else pushToast(t("toast_used_food", { food: foodDisplayName(food) }));
   return true;
 }
 
@@ -727,7 +1053,7 @@ function clearSelection() {
 
 function toggleFreezeSelection() {
   if (!state.selected) {
-    pushToast("Select a shop slot first.");
+    pushToast(t("toast_select_shop_slot"));
     return;
   }
   if (state.selected.type === "shopPet") {
@@ -739,7 +1065,7 @@ function toggleFreezeSelection() {
     if (!state.shopFood[idx]) return;
     state.freezeFood[idx] = !state.freezeFood[idx];
   } else {
-    pushToast("Only shop slots can be frozen.");
+    pushToast(t("toast_only_shop_freeze"));
     return;
   }
 }
@@ -809,6 +1135,11 @@ function debugButtonAtPosition(x, y) {
 }
 
 function handleShopClick(x, y) {
+  if (pointInRect(x, y, ui.languageBtn)) {
+    toggleLanguage();
+    return;
+  }
+
   const debugIndex = debugButtonAtPosition(x, y);
   if (debugIndex !== -1) {
     const preset = debugScenarioButtons[debugIndex];
@@ -828,7 +1159,7 @@ function handleShopClick(x, y) {
   }
   if (pointInRect(x, y, ui.sellBtn)) {
     if (!state.selected || state.selected.type !== "team") {
-      pushToast("Select a team pet to sell.");
+      pushToast(t("toast_select_team_to_sell"));
       return;
     }
     onSellTeamPet(state.selected.index);
@@ -919,7 +1250,13 @@ function queueStartBattleTriggers(team, opponent, sideLabel, battle) {
         if (!actor || !target) return;
         const bonus = Math.max(1, Math.floor(actor.attack * (0.5 * actor.level)));
         target.attack += bonus;
-        appendBattleLog(`${sideLabel} Dodo buffs ${target.name} +${bonus} attack.`);
+        appendBattleLog(
+          t("log_dodo_buff", {
+            side: sideLabel,
+            target: petDisplayName(target),
+            bonus,
+          })
+        );
       },
     });
   }
@@ -940,7 +1277,13 @@ function queueStartBattleTriggers(team, opponent, sideLabel, battle) {
           const target = opponent[randInt(0, opponent.length - 1)];
           if (!target) return;
           target.health -= 1;
-          appendBattleLog(`${sideLabel} ${actor.name} pings ${target.name} for 1.`);
+          appendBattleLog(
+            t("log_ping", {
+              side: sideLabel,
+              actor: petDisplayName(actor),
+              target: petDisplayName(target),
+            })
+          );
         },
       });
     }
@@ -951,7 +1294,7 @@ function computeDamage(attacker, defender) {
   let damage = attacker.attack;
   if (attacker.perk === "meat") damage += 3;
   if (defender.perk === "melon") {
-    appendBattleLog(`${defender.name}'s Melon blocks the hit.`);
+    appendBattleLog(t("log_melon_block", { defender: petDisplayName(defender) }));
     damage = Math.max(0, damage - 20);
     defender.perk = null;
   }
@@ -983,7 +1326,7 @@ function applySummonedPetBuffs(team, summonedPet, sideLabel) {
     .reduce((sum, ally) => sum + ally.level, 0);
   if (bonus <= 0) return;
   summonedPet.attack += bonus;
-  appendBattleLog(`${sideLabel} Horse buffs summoned ally +${bonus} attack.`);
+  appendBattleLog(t("log_horse_buff", { side: sideLabel, bonus }));
 }
 
 function handleFaint(pet, index, team, sideLabel) {
@@ -995,7 +1338,7 @@ function handleFaint(pet, index, team, sideLabel) {
       const pick = randomChoice(targets).ally;
       pick.attack += 2 * pet.level;
       pick.health += 1 * pet.level;
-      appendBattleLog(`${sideLabel} Ant buffs ${pick.name}.`);
+      appendBattleLog(t("log_ant_buff", { side: sideLabel, target: petDisplayName(pick) }));
     }
   }
 
@@ -1009,14 +1352,14 @@ function handleFaint(pet, index, team, sideLabel) {
       target.attack += pet.level;
       target.health += pet.level;
     }
-    if (rear.length) appendBattleLog(`${sideLabel} Flamingo buffs rear ally.`);
+    if (rear.length) appendBattleLog(t("log_flamingo_buff", { side: sideLabel }));
   }
 
   if (pet.ability === "faint_give_melon_friend_behind") {
     const behind = team[index];
     if (behind) {
       behind.perk = "melon";
-      appendBattleLog(`${sideLabel} Turtle gives Melon to ${behind.name}.`);
+      appendBattleLog(t("log_turtle_melon", { side: sideLabel, target: petDisplayName(behind) }));
     }
   }
 
@@ -1031,13 +1374,19 @@ function handleFaint(pet, index, team, sideLabel) {
     if (team.length < TEAM_SLOTS) {
       team.splice(index, 0, summon);
       applySummonedPetBuffs(team, summon, sideLabel);
-      appendBattleLog(`${sideLabel} Cricket summons Zombie.`);
+      appendBattleLog(t("log_cricket_summon", { side: sideLabel }));
     }
   } else if (pet.summonOnFaint && team.length < TEAM_SLOTS) {
     const summon = summonFromTemplate(pet.summonOnFaint);
     team.splice(index, 0, summon);
     applySummonedPetBuffs(team, summon, sideLabel);
-    appendBattleLog(`${sideLabel} ${pet.name} summons ${pet.summonOnFaint.name}.`);
+    appendBattleLog(
+      t("log_pet_summon", {
+        side: sideLabel,
+        pet: petDisplayName(pet),
+        summon: summonDisplayNameFromTemplate(pet.summonOnFaint),
+      })
+    );
   }
 }
 
@@ -1048,11 +1397,11 @@ function handleHurtAbility(pet, index, team, sideLabel) {
     if (rear) {
       rear.attack += pet.level;
       rear.health += pet.level;
-      appendBattleLog(`${sideLabel} Camel buffs friend behind.`);
+      appendBattleLog(t("log_camel_buff", { side: sideLabel }));
     }
   } else if (pet.ability === "hurt_gain_attack") {
     pet.attack += 2 * pet.level;
-    appendBattleLog(`${sideLabel} Peacock gains attack from hurt.`);
+    appendBattleLog(t("log_peacock_hurt", { side: sideLabel }));
   }
 }
 
@@ -1070,7 +1419,7 @@ function resolveBattleStep() {
     const actorId = pet.id;
     enqueueBattleTrigger(battle, {
       phase: "pre_attack",
-      side: "Friendly",
+      side: t("side_friendly"),
       actor: pet.name,
       note: "kangaroo",
       run: () => {
@@ -1088,7 +1437,7 @@ function resolveBattleStep() {
     const actorId = pet.id;
     enqueueBattleTrigger(battle, {
       phase: "pre_attack",
-      side: "Enemy",
+      side: t("side_enemy"),
       actor: pet.name,
       note: "kangaroo",
       run: () => {
@@ -1112,13 +1461,18 @@ function resolveBattleStep() {
       const rightDamage = computeDamage(rightFront, leftFront);
       rightFront.health -= leftDamage;
       leftFront.health -= rightDamage;
-      appendBattleLog(`${leftFront.name} trades with ${rightFront.name}.`);
+      appendBattleLog(
+        t("log_trade", {
+          attacker: petDisplayName(leftFront),
+          defender: petDisplayName(rightFront),
+        })
+      );
 
       if (leftFront.health > 0 && hasHurtBehavior(leftFront)) {
         const actorId = leftFront.id;
         enqueueBattleTrigger(battle, {
           phase: "hurt",
-          side: "Friendly",
+          side: t("side_friendly"),
           actor: leftFront.name,
           note: `ability=${leftFront.ability}`,
           run: () => {
@@ -1126,7 +1480,7 @@ function resolveBattleStep() {
             if (!actor) return;
             const idx = left.findIndex((entry) => entry && entry.id === actorId);
             if (idx === -1) return;
-            handleHurtAbility(actor, idx, left, "Friendly");
+            handleHurtAbility(actor, idx, left, t("side_friendly"));
           },
         });
       }
@@ -1135,7 +1489,7 @@ function resolveBattleStep() {
         const actorId = rightFront.id;
         enqueueBattleTrigger(battle, {
           phase: "hurt",
-          side: "Enemy",
+          side: t("side_enemy"),
           actor: rightFront.name,
           note: `ability=${rightFront.ability}`,
           run: () => {
@@ -1143,7 +1497,7 @@ function resolveBattleStep() {
             if (!actor) return;
             const idx = right.findIndex((entry) => entry && entry.id === actorId);
             if (idx === -1) return;
-            handleHurtAbility(actor, idx, right, "Enemy");
+            handleHurtAbility(actor, idx, right, t("side_enemy"));
           },
         });
       }
@@ -1162,13 +1516,13 @@ function finishBattle() {
 
   if (battle.result === "win") {
     state.trophies += 1;
-    pushToast("Victory! +1 trophy.");
+    pushToast(t("toast_victory_trophy"));
   } else if (battle.result === "lose") {
     const loss = lifeLossByRound(state.round);
     state.lives -= loss;
-    pushToast(`Defeat! -${loss} life${loss > 1 ? "s" : ""}.`);
+    pushToast(t("toast_defeat_life", { loss }));
   } else {
-    pushToast("Draw.");
+    pushToast(t("toast_draw"));
   }
 
   clearOneBattleFoodBuffs();
@@ -1219,7 +1573,7 @@ function startBattle() {
   runEndTurnTeamAbilities();
   const friendlyLine = activeBattleLine(state.team);
   if (!friendlyLine.length) {
-    pushToast("Place at least one pet.");
+    pushToast(t("toast_place_pet"));
     return;
   }
 
@@ -1244,9 +1598,9 @@ function startBattle() {
   state.toast = "";
   state.toastTime = 0;
   state.mode = "battle";
-  appendBattleLog("Battle started.");
-  queueStartBattleTriggers(state.battle.friendly, state.battle.enemy, "Friendly", state.battle);
-  queueStartBattleTriggers(state.battle.enemy, state.battle.friendly, "Enemy", state.battle);
+  appendBattleLog(t("log_battle_started"));
+  queueStartBattleTriggers(state.battle.friendly, state.battle.enemy, t("side_friendly"), state.battle);
+  queueStartBattleTriggers(state.battle.enemy, state.battle.friendly, t("side_enemy"), state.battle);
   queueCleanupForBothSides(state.battle);
   flushBattleTriggerQueue(state.battle);
   refreshBattleOutcome(state.battle);
@@ -1324,18 +1678,19 @@ function drawTopBar() {
   ctx.strokeStyle = "rgba(35, 65, 106, 0.28)";
   ctx.lineWidth = 2;
   ctx.stroke();
-  drawPill(54, 42, 176, 50, `Round ${state.round}`, "#b9ddff");
-  drawPill(248, 42, 144, 50, `Gold ${state.gold}`, "#ffe48a");
-  drawPill(408, 42, 170, 50, `Lives ${state.lives}`, "#ffb8ad");
-  drawPill(594, 42, 190, 50, `Trophy ${state.trophies}`, "#c9f0b4");
+  drawPill(54, 42, 176, 50, t("top_round", { round: state.round }), "#b9ddff");
+  drawPill(248, 42, 144, 50, t("top_gold", { gold: state.gold }), "#ffe48a");
+  drawPill(408, 42, 170, 50, t("top_lives", { lives: state.lives }), "#ffb8ad");
+  drawPill(594, 42, 190, 50, t("top_trophy", { trophies: state.trophies }), "#c9f0b4");
   const xpNeeded = xpThresholdForPlayerLevel(state.playerLevel);
-  const xpText = state.playerLevel >= 5 ? "MAX" : `${state.playerXp}/${xpNeeded}`;
-  drawPill(802, 42, 210, 50, `Lvl ${state.playerLevel} XP ${xpText}`, "#d5cef9");
+  const xpText = state.playerLevel >= 5 ? t("top_max") : `${state.playerXp}/${xpNeeded}`;
+  drawPill(802, 42, 210, 50, t("top_level_xp", { level: state.playerLevel, xp: xpText }), "#d5cef9");
 
   ctx.fillStyle = "#294569";
   ctx.font = "700 18px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`Tier ${maxUnlockedTier()} Shop`, 1126, 70);
+  ctx.fillText(t("top_tier_shop", { tier: maxUnlockedTier() }), 1070, 70);
+  drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
 function drawSlot(slot, fill) {
@@ -1374,15 +1729,15 @@ function drawPetCard(slot, pet, options) {
   ctx.fillStyle = "#263f60";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(pet.name, x + 86, y + 28);
+  ctx.fillText(petDisplayName(pet), x + 86, y + 28);
 
   ctx.font = "600 15px 'Trebuchet MS', sans-serif";
   ctx.fillStyle = "#4a678f";
-  ctx.fillText(`Lv ${pet.level}  Exp ${pet.exp}`, x + 86, y + 50);
+  ctx.fillText(t("pet_lv_exp", { level: pet.level, exp: pet.exp }), x + 86, y + 50);
 
-  drawStatToken(x + 20, y + 66, `A ${pet.attack}`, "#ffd38b");
-  drawStatToken(x + 96, y + 66, `H ${pet.health}`, "#ffb8af");
-  if (pet.perk) drawStatToken(x + 172, y + 66, pet.perk.toUpperCase(), "#b6e2ba", 82);
+  drawStatToken(x + 20, y + 66, t("token_attack", { value: pet.attack }), "#ffd38b");
+  drawStatToken(x + 96, y + 66, t("token_health", { value: pet.health }), "#ffb8af");
+  if (pet.perk) drawStatToken(x + 172, y + 66, perkDisplayName(pet.perk), "#b6e2ba", 82);
   if (price != null) drawStatToken(x + w - 62, y + 8, `${price}G`, "#ffe88f", 54);
 }
 
@@ -1406,11 +1761,11 @@ function drawFoodCard(slot, food, options) {
   ctx.fillStyle = "#324c6f";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(food.name, x + 78, y + 28);
+  ctx.fillText(foodDisplayName(food), x + 78, y + 28);
 
   ctx.font = "600 14px 'Trebuchet MS', sans-serif";
   ctx.fillStyle = "#4e6687";
-  ctx.fillText(food.effect.replaceAll("_", " "), x + 78, y + 50);
+  ctx.fillText(foodEffectDisplayName(food.effect), x + 78, y + 50);
   drawStatToken(x + w - 62, y + 8, `${price}G`, "#ffe88f", 54);
 }
 
@@ -1423,9 +1778,9 @@ function drawShopPanel() {
   ctx.fillStyle = "#365379";
   ctx.font = "600 22px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Team (front -> back)", 70, 118);
-  ctx.fillText("Shop Pets", 70, 296);
-  ctx.fillText("Shop Food", 70, 456);
+  ctx.fillText(t("ui_team_front"), 70, 118);
+  ctx.fillText(t("ui_shop_pets"), 70, 296);
+  ctx.fillText(t("ui_shop_food"), 70, 456);
 
   for (let i = 0; i < ui.teamSlots.length; i += 1) {
     const slot = ui.teamSlots[i];
@@ -1448,15 +1803,15 @@ function drawShopPanel() {
     if (food) drawFoodCard(slot, food, { frozen, price: FOOD_COST });
   }
 
-  drawButton(ui.rerollBtn, "Reroll (R)", "#b9ddff");
-  drawButton(ui.freezeBtn, "Freeze (X)", "#f8d17e");
-  drawButton(ui.sellBtn, "Sell (S)", "#ffc2b8");
-  drawButton(ui.endTurnBtn, "End Turn (E)", "#8fd691", true);
+  drawButton(ui.rerollBtn, t("ui_reroll"), "#b9ddff");
+  drawButton(ui.freezeBtn, t("ui_freeze"), "#f8d17e");
+  drawButton(ui.sellBtn, t("ui_sell"), "#ffc2b8");
+  drawButton(ui.endTurnBtn, t("ui_end_turn"), "#8fd691", true);
 
   ctx.fillStyle = "#355177";
   ctx.font = "700 14px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Test Presets", 820, 614);
+  ctx.fillText(t("ui_test_presets"), 820, 614);
   for (let i = 0; i < ui.debugButtons.length; i += 1) {
     const box = ui.debugButtons[i];
     const preset = debugScenarioButtons[i];
@@ -1468,13 +1823,13 @@ function drawShopPanel() {
     ctx.font = "700 15px 'Trebuchet MS', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(preset.label, box.x + box.w / 2, box.y + box.h / 2 + 1);
+    ctx.fillText(t(`preset_${preset.key}`), box.x + box.w / 2, box.y + box.h / 2 + 1);
   }
 
   ctx.fillStyle = "rgba(37, 59, 90, 0.9)";
   ctx.font = "600 17px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Controls: click/drag cards, drag pet to Sell, right click shop to freeze, F fullscreen", 70, 678);
+  ctx.fillText(t("ui_controls"), 70, 678);
 }
 
 function drawMenu() {
@@ -1482,11 +1837,11 @@ function drawMenu() {
   ctx.fillStyle = "#2f4d73";
   ctx.font = "700 68px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Super Auto Pets", WIDTH / 2, 210);
+  ctx.fillText(t("menu_title"), WIDTH / 2, 210);
 
   ctx.fillStyle = "#44638c";
   ctx.font = "600 28px 'Trebuchet MS', sans-serif";
-  ctx.fillText("Steam-inspired auto battler clone", WIDTH / 2, 258);
+  ctx.fillText(t("menu_subtitle"), WIDTH / 2, 258);
 
   roundRect(ctx, 330, 305, 620, 188, 22, "rgba(255,255,255,0.85)");
   ctx.strokeStyle = "rgba(33, 62, 100, 0.28)";
@@ -1494,9 +1849,10 @@ function drawMenu() {
   ctx.stroke();
   ctx.fillStyle = "#315078";
   ctx.font = "600 24px 'Trebuchet MS', sans-serif";
-  ctx.fillText("Build your team in shop, then auto-battle each round.", WIDTH / 2, 356);
-  ctx.fillText("Merge pets, feed food, and reach 10 trophies before 0 lives.", WIDTH / 2, 396);
-  drawButton(ui.startButton, "Start Game", "#91d38e", true);
+  ctx.fillText(t("menu_line1"), WIDTH / 2, 356);
+  ctx.fillText(t("menu_line2"), WIDTH / 2, 396);
+  drawButton(ui.startButton, t("menu_start"), "#91d38e", true);
+  drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
 function drawBattleLine(line, x, y, faceRight) {
@@ -1517,10 +1873,10 @@ function drawBattleLine(line, x, y, faceRight) {
     ctx.fillStyle = "#2d4b72";
     ctx.font = "700 16px 'Trebuchet MS', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(pet.name, px + 51, y + 136);
-    drawStatToken(px + 12, y + 162, `A ${pet.attack}`, "#ffd38b", 78);
-    drawStatToken(px + 12, y + 192, `H ${pet.health}`, "#ffb8af", 78);
-    if (pet.perk) drawStatToken(px + 12, y + 222, pet.perk.toUpperCase(), "#bde4bf", 78);
+    ctx.fillText(petDisplayName(pet), px + 51, y + 136);
+    drawStatToken(px + 12, y + 162, t("token_attack", { value: pet.attack }), "#ffd38b", 78);
+    drawStatToken(px + 12, y + 192, t("token_health", { value: pet.health }), "#ffb8af", 78);
+    if (pet.perk) drawStatToken(px + 12, y + 222, perkDisplayName(pet.perk), "#bde4bf", 78);
   }
 }
 
@@ -1533,7 +1889,7 @@ function drawBattle() {
   ctx.fillStyle = "#2e4a70";
   ctx.font = "700 26px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Battle Phase", WIDTH / 2, 156);
+  ctx.fillText(t("battle_phase"), WIDTH / 2, 156);
 
   roundRect(ctx, 46, 180, 566, 340, 18, "rgba(255,255,255,0.85)");
   ctx.strokeStyle = "rgba(32, 62, 102, 0.2)";
@@ -1544,8 +1900,8 @@ function drawBattle() {
 
   ctx.fillStyle = "#36557f";
   ctx.font = "700 22px 'Trebuchet MS', sans-serif";
-  ctx.fillText("Your Team", 329, 215);
-  ctx.fillText("Enemy Team", 951, 215);
+  ctx.fillText(t("battle_your_team"), 329, 215);
+  ctx.fillText(t("battle_enemy_team"), 951, 215);
   drawBattleLine(battle.friendly, 86, 246, true);
   drawBattleLine(battle.enemy, 708, 246, false);
 
@@ -1556,14 +1912,19 @@ function drawBattle() {
   ctx.fillStyle = "#334f76";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("Combat Log", 344, 564);
+  ctx.fillText(t("battle_log"), 344, 564);
   ctx.font = "600 16px 'Trebuchet MS', sans-serif";
   for (let i = 0; i < battle.log.length; i += 1) {
     ctx.fillText(`- ${battle.log[i]}`, 344, 592 + i * 20);
   }
 
   if (battle.result) {
-    const text = battle.result === "win" ? "Victory!" : battle.result === "lose" ? "Defeat!" : "Draw!";
+    const text =
+      battle.result === "win"
+        ? t("battle_result_win")
+        : battle.result === "lose"
+          ? t("battle_result_lose")
+          : t("battle_result_draw");
     roundRect(ctx, 520, 90, 240, 64, 14, "rgba(255,255,255,0.95)");
     ctx.strokeStyle = "rgba(32,62,102,0.2)";
     ctx.lineWidth = 2;
@@ -1581,7 +1942,7 @@ function drawGameOver() {
   ctx.fillStyle = win ? "#2f8c56" : "#ad4f4f";
   ctx.font = "700 72px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(win ? "You Win!" : "Game Over", WIDTH / 2, 228);
+  ctx.fillText(win ? t("over_win") : t("over_lose"), WIDTH / 2, 228);
 
   roundRect(ctx, 360, 276, 560, 210, 22, "rgba(255,255,255,0.9)");
   ctx.strokeStyle = "rgba(32,62,102,0.2)";
@@ -1589,10 +1950,11 @@ function drawGameOver() {
   ctx.stroke();
   ctx.fillStyle = "#325178";
   ctx.font = "600 30px 'Trebuchet MS', sans-serif";
-  ctx.fillText(`Round reached: ${state.round}`, WIDTH / 2, 336);
-  ctx.fillText(`Trophies: ${state.trophies} / ${MAX_TROPHIES}`, WIDTH / 2, 376);
-  ctx.fillText(`Lives left: ${state.lives}`, WIDTH / 2, 416);
-  drawButton(ui.restartBtn, "Play Again", "#92d692", true);
+  ctx.fillText(t("over_round", { round: state.round }), WIDTH / 2, 336);
+  ctx.fillText(t("over_trophies", { trophies: state.trophies, max: MAX_TROPHIES }), WIDTH / 2, 376);
+  ctx.fillText(t("over_lives", { lives: state.lives }), WIDTH / 2, 416);
+  drawButton(ui.restartBtn, t("over_restart"), "#92d692", true);
+  drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
 function drawToast() {
@@ -1648,6 +2010,11 @@ function toWorldCoords(event) {
 }
 
 function handlePrimaryClick(x, y) {
+  if (pointInRect(x, y, ui.languageBtn)) {
+    toggleLanguage();
+    return;
+  }
+
   if (state.mode === "menu") {
     if (pointInRect(x, y, ui.startButton)) resetGame();
     return;
@@ -1675,11 +2042,20 @@ function dragSourceAtPosition(x, y) {
 }
 
 function sourceLabel(source) {
-  if (!source) return "drag";
-  if (source.type === "team") return state.team[source.index]?.name ?? "team";
-  if (source.type === "shopPet") return state.shopPets[source.index]?.name ?? "pet";
-  if (source.type === "shopFood") return state.shopFood[source.index]?.name ?? "food";
-  return "drag";
+  if (!source) return t("drag_default");
+  if (source.type === "team") {
+    const pet = state.team[source.index];
+    return pet ? petDisplayName(pet) : t("drag_team");
+  }
+  if (source.type === "shopPet") {
+    const pet = state.shopPets[source.index];
+    return pet ? petDisplayName(pet) : t("drag_pet");
+  }
+  if (source.type === "shopFood") {
+    const food = state.shopFood[source.index];
+    return food ? foodDisplayName(food) : t("drag_food");
+  }
+  return t("drag_default");
 }
 
 function handleDragDrop(source, x, y) {
@@ -1739,6 +2115,10 @@ function toggleFullscreen() {
 
 function onKeyDown(event) {
   const key = event.key.toLowerCase();
+  if (key === "l") {
+    toggleLanguage();
+    return;
+  }
   if (key === "f") return toggleFullscreen();
   if (event.key === "Escape" && document.fullscreenElement) {
     document.exitFullscreen?.().catch(() => {});
@@ -1868,6 +2248,7 @@ function compactPet(pet) {
   return {
     kind: pet.kind,
     name: pet.name,
+    displayName: petDisplayName(pet),
     attack: pet.attack,
     health: pet.health,
     level: pet.level,
@@ -1880,6 +2261,7 @@ function compactPet(pet) {
 function renderGameToText() {
   const payload = {
     coordinateSystem: "origin=(0,0) top-left; +x right; +y down; canvas=1280x720",
+    language: state.language,
     mode: state.mode,
     round: state.round,
     playerLevel: state.playerLevel,
@@ -1909,7 +2291,7 @@ function renderGameToText() {
       food: state.shopFood.map((food, idx) => ({
         slot: idx,
         frozen: state.freezeFood[idx],
-        food: food ? { kind: food.kind, name: food.name, effect: food.effect } : null,
+        food: food ? { kind: food.kind, name: food.name, displayName: foodDisplayName(food), effect: food.effect } : null,
       })),
     },
     battle: state.battle
@@ -1952,6 +2334,7 @@ window.addEventListener("keydown", onKeyDown);
 window.addEventListener("resize", resizeCanvasDisplay);
 document.addEventListener("fullscreenchange", resizeCanvasDisplay);
 
+restoreLanguagePreference();
 resizeCanvasDisplay();
 render();
 requestAnimationFrame(loop);

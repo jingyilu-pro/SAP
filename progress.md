@@ -148,3 +148,57 @@ Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\devel
 - Remaining TODO / next iteration suggestions:
   - Add queue-order assertions for chained edge cases (multi-faint + summon + hurt interleave) directly in scenario assertion script.
   - Consider refactoring shared Playwright runner helpers between `run_scenario_assertions.mjs` and `run_full_regression.mjs` to reduce duplication.
+
+- Iteration 7: bilingual language switch (English/Chinese) implemented.
+- Core i18n changes in `src/game.js`:
+  - Added i18n dictionaries (`en` / `zh`) for UI text, toasts, and combat log templates.
+  - Added display-name maps for pets and foods in Chinese (`PET_NAME_ZH`, `FOOD_NAME_ZH`).
+  - Added helpers: `t`, `petDisplayName`, `foodDisplayName`, `perkDisplayName`, `foodEffectDisplayName`, `toggleLanguage`.
+  - Added `state.language` (default `en`) and exposed it in `render_game_to_text`.
+- Language switch UX:
+  - Added visible language toggle button on top bar (`ui.languageBtn`) in shop/battle/gameover.
+  - Added language toggle button on menu screen.
+  - Added keyboard shortcut `L` to switch language in any mode.
+  - Added toast feedback when language changes.
+- Localized rendering scope:
+  - Top bar pills, section headings, menu copy, battle headers, game-over copy, button labels.
+  - Shop card text: pet/food names, level/exp labels, attack/health tokens, food effect labels.
+  - Test preset labels and controls hint line.
+  - Toasts and battle log entries now route through i18n keys.
+- Added dedicated Playwright action for language switch:
+  - `test/actions-language-toggle.json`
+- Validation completed:
+  - `node --check src/game.js` passed.
+  - Targeted language toggle run passed:
+    - output: `output/web-game/language-toggle/`
+    - state confirms `"language":"zh"` and localized names/toast.
+  - Full regression rerun passed after i18n changes:
+    - `node scripts/run_full_regression.mjs`
+    - scenario assertions: 5/5 pass
+    - non-scenario actions: 9/9 pass (includes new `actions-language-toggle.json`)
+  - Visual inspection completed for updated language UI:
+    - `output/web-game/language-toggle/shot-0.png`
+    - `output/web-game/lang-layout-smoke2/shot-0.png`
+    - `output/web-game/lang-layout-zh2/shot-0.png`
+- Remaining TODO / next iteration suggestions:
+  - Add persistence for language preference (localStorage) so reload keeps user-selected language.
+  - Expand i18n into automated assertions (for example asserting critical Chinese labels after toggle).
+
+- Iteration 8: language preference persistence implemented.
+- Added localStorage persistence in `src/game.js`:
+  - `LANGUAGE_STORAGE_KEY = "sap_clone_language"`
+  - `persistLanguagePreference()` writes selected language on toggle.
+  - `restoreLanguagePreference()` restores saved language at startup.
+  - Startup now calls `restoreLanguagePreference()` before first render.
+- Behavior:
+  - Toggling via button or `L` still updates UI immediately.
+  - Refreshing page keeps previously selected language (`en`/`zh`).
+  - Storage failures (private mode / blocked storage) fail safely and keep default `en`.
+- Validation completed:
+  - `node --check src/game.js` passed.
+  - Persistence verification script (Playwright + chrome channel) passed:
+    - before reload: `storage=zh`, `language=zh`
+    - after reload: `storage=zh`, `language=zh`
+  - Full regression rerun passed:
+    - scenario assertions: 5/5
+    - non-scenario actions: 9/9
