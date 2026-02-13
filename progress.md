@@ -274,3 +274,38 @@ Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\devel
     - `output/web-game/full-regression/actions-battle-mid/shot-0.png`
     - `output/web-game/full-regression/actions-round-complete/shot-0.png`
     - `output/web-game/full-regression/actions-card-inspect/shot-0.png`
+- Iteration 11: full asset/config pipeline runtime integration (configs.xlsx-driven catalog) completed.
+- Data/runtime wiring:
+  - Added `index.html` preload of `src/game_data.generated.js` before `src/game.js`.
+  - Added npm script `build:game-data` using fixed Python path:
+    - `C:/Users/陆敬毅/AppData/Local/Programs/Python/Python312/python.exe scripts/build_game_catalog.py`
+  - In `src/game.js`, replaced hardcoded pools with config-driven loading via `window.__GAME_DATA`.
+  - Added runtime indexes (pack/id/kind maps), plus active pack state and localStorage persistence (`sap_clone_pack_key`).
+  - Added menu pack selector (6 packs) and shop/enemy pool filtering by `activePackKey + tier`.
+- Entity/model changes:
+  - `createPet/createFood` now instantiate from generated catalog records and carry metadata (`icon`, `packKey`, hints, impl status, tier).
+  - Added placeholder food effect execution branch (`placeholder_stat_buff`) with tier-based buff values from config.
+  - Inspect details now include pack and prioritize config hints; placeholder ability/effect explicitly shows not-implemented notice.
+- Rendering/resource changes:
+  - Added icon image cache and unified icon-first rendering path for shop pet, shop food, battle cards.
+  - Added safe fallback for Playwright file-url regression mode:
+    - when protocol is `file:`, skip external image draw to avoid tainted-canvas screenshot failures.
+    - when protocol is `http:`, real icons render normally.
+- Observability:
+  - `render_game_to_text()` now exposes `activePackKey`, `assetCatalogVersion`, and icon fields in compact pet/food payloads.
+- Added action payloads:
+  - `test/actions-pack-switch.json`
+  - `test/actions-icon-render.json`
+  - `test/actions-placeholder-entry.json`
+- Validation completed:
+  - `node --check src/game.js` passed.
+  - `build_game_catalog.py` run passed (`packs=6 pets=360 foods=102`).
+  - `node ./scripts/run_full_regression.mjs` passed:
+    - scenario assertions 5/5
+    - action regressions 13/13 (including new action files)
+  - Visual checks passed on latest regression screenshots:
+    - `actions-pack-switch`, `actions-icon-render`, `actions-placeholder-entry`, `actions-food-battle`, `actions-battle-mid`, `actions-card-inspect`.
+  - Extra HTTP icon validation run passed:
+    - `output/web-game/http-icon-render/shot-0.png` confirms real icon rendering in served mode.
+- Notes for next iteration:
+  - If needed, remove `file:` icon fallback once regression capture pipeline stops relying on canvas `toDataURL` under file URLs.

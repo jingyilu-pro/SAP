@@ -55,42 +55,8 @@ const FAINT_ABILITIES = new Set([
   "faint_summon_zombie",
 ]);
 const LANGUAGE_STORAGE_KEY = "sap_clone_language";
+const PACK_STORAGE_KEY = "sap_clone_pack_key";
 const SUPPORTED_LANGUAGES = new Set(["en", "zh"]);
-
-const PET_NAME_ZH = {
-  ant: "蚂蚁",
-  fish: "鱼",
-  beaver: "海狸",
-  cricket: "蟋蟀",
-  mosquito: "蚊子",
-  otter: "水獭",
-  swan: "天鹅",
-  horse: "马",
-  flamingo: "火烈鸟",
-  camel: "骆驼",
-  kangaroo: "袋鼠",
-  giraffe: "长颈鹿",
-  rabbit: "兔子",
-  peacock: "孔雀",
-  dodo: "渡渡鸟",
-  penguin: "企鹅",
-  turtle: "海龟",
-  zombie_cricket: "僵尸蟋蟀",
-  bee: "蜜蜂",
-};
-
-const FOOD_NAME_ZH = {
-  apple: "苹果",
-  honey: "蜂蜜",
-  meat: "牛排",
-  garlic: "蒜头",
-  pear: "梨",
-  salad: "沙拉",
-  cupcake: "纸杯蛋糕",
-  canned_food: "罐头",
-  melon: "蜜瓜",
-  chocolate: "巧克力",
-};
 
 const I18N = {
   en: {
@@ -124,6 +90,7 @@ const I18N = {
     menu_subtitle: "Steam-inspired auto battler clone",
     menu_line1: "Build your team in shop, then auto-battle each round.",
     menu_line2: "Merge pets, feed food, and reach 10 trophies before 0 lives.",
+    menu_pack_select: "Select Pack",
     menu_start: "Start Game",
     battle_phase: "Battle Phase",
     battle_your_team: "Your Team",
@@ -155,6 +122,7 @@ const I18N = {
     info_field_perk: "Perk",
     info_field_ability: "Ability",
     info_field_effect: "Effect",
+    info_field_pack: "Pack",
     info_value_none: "None",
     info_type_pet: "Pet",
     info_type_food: "Food",
@@ -186,6 +154,7 @@ const I18N = {
     food_effect_shop_buff_2_1: "shop buff +2/+1",
     food_effect_perk_melon: "perk melon",
     food_effect_exp_1: "exp +1",
+    food_effect_placeholder_stat_buff: "placeholder buff",
     effect_desc_stat_1_1: "Give a pet +1/+1.",
     effect_desc_summon_bee: "Give Honey: summon a 1/1 Bee on faint.",
     effect_desc_perk_meat: "Give Meat perk: attacks deal +3 damage.",
@@ -213,6 +182,7 @@ const I18N = {
     ability_name_start_battle_buff_friend_ahead_attack: "Lead Tactics",
     ability_name_end_turn_buff_level2_friends: "Veteran Coach",
     ability_name_faint_give_melon_friend_behind: "Melon Legacy",
+    ability_name_placeholder_none: "Placeholder Ability",
     ability_desc_level_buff_team: ({ level }) => `Level up: give all friends +${level}/+${level}.`,
     ability_desc_faint_buff_random_ally: ({ level }) => `Faint: give 1 random friend +${2 * level}/+${level}.`,
     ability_desc_sell_buff_attack: ({ level }) => `Sell: give ${level} random friend +1 attack.`,
@@ -232,7 +202,10 @@ const I18N = {
     ability_desc_end_turn_buff_level2_friends: ({ level }) =>
       `End turn: buff up to 2 level 2+ friends +${level}/+${level}.`,
     ability_desc_faint_give_melon_friend_behind: () => "Faint: give Melon perk to the friend behind.",
+    placeholder_ability_notice: "Not implemented ability (placeholder).",
+    placeholder_effect_notice: "Not implemented effect (placeholder).",
     toast_language_switched: ({ language }) => `Language switched: ${language}.`,
+    toast_pack_switched: ({ pack }) => `Pack switched: ${pack}.`,
     toast_level_up_player: ({ level }) => `Level up! Reached level ${level}.`,
     toast_not_enough_gold_reroll: "Not enough gold for reroll.",
     toast_no_pet_to_sell: "No pet to sell.",
@@ -309,6 +282,7 @@ const I18N = {
     menu_subtitle: "受 Steam 启发的自走对战复刻",
     menu_line1: "在商店构建队伍，然后每回合自动战斗。",
     menu_line2: "合成宠物、喂食物，在生命归零前拿到 10 个奖杯。",
+    menu_pack_select: "选择兽群",
     menu_start: "开始游戏",
     battle_phase: "战斗阶段",
     battle_your_team: "我方队伍",
@@ -340,6 +314,7 @@ const I18N = {
     info_field_perk: "效果",
     info_field_ability: "技能",
     info_field_effect: "效果",
+    info_field_pack: "兽群",
     info_value_none: "无",
     info_type_pet: "宠物",
     info_type_food: "食物",
@@ -371,6 +346,7 @@ const I18N = {
     food_effect_shop_buff_2_1: "商店宠物 +2/+1",
     food_effect_perk_melon: "获得蜜瓜",
     food_effect_exp_1: "经验 +1",
+    food_effect_placeholder_stat_buff: "占位增益",
     effect_desc_stat_1_1: "给一只宠物 +1/+1。",
     effect_desc_summon_bee: "给予蜂蜜：阵亡时召唤 1/1 蜜蜂。",
     effect_desc_perk_meat: "给予肉效果：攻击时额外 +3 伤害。",
@@ -398,6 +374,7 @@ const I18N = {
     ability_name_start_battle_buff_friend_ahead_attack: "开战战术",
     ability_name_end_turn_buff_level2_friends: "精英教练",
     ability_name_faint_give_melon_friend_behind: "遗言给蜜瓜",
+    ability_name_placeholder_none: "占位技能",
     ability_desc_level_buff_team: ({ level }) => `升级时：所有友军 +${level}/+${level}。`,
     ability_desc_faint_buff_random_ally: ({ level }) => `阵亡时：随机强化 1 个友军 +${2 * level}/+${level}。`,
     ability_desc_sell_buff_attack: ({ level }) => `出售时：给 ${level} 个随机友军 +1 攻击。`,
@@ -417,7 +394,10 @@ const I18N = {
     ability_desc_end_turn_buff_level2_friends: ({ level }) =>
       `回合结束：最多强化 2 个 2 级及以上友军 +${level}/+${level}。`,
     ability_desc_faint_give_melon_friend_behind: () => "阵亡时：给身后友军蜜瓜效果。",
+    placeholder_ability_notice: "该技能尚未实现（占位）。",
+    placeholder_effect_notice: "该食物效果尚未实现（占位）。",
     toast_language_switched: ({ language }) => `语言已切换：${language}。`,
+    toast_pack_switched: ({ pack }) => `已切换兽群：${pack}。`,
     toast_level_up_player: ({ level }) => `升级！到达等级 ${level}。`,
     toast_not_enough_gold_reroll: "金币不足，无法刷新。",
     toast_no_pet_to_sell: "没有可出售的宠物。",
@@ -465,38 +445,66 @@ const I18N = {
   },
 };
 
-const petPool = [
-  { kind: "ant", name: "Ant", tier: 1, attack: 2, health: 1, color: "#d98f4e", ability: "faint_buff_random_ally" },
-  { kind: "fish", name: "Fish", tier: 1, attack: 2, health: 3, color: "#72b8ea", ability: "level_buff_team" },
-  { kind: "beaver", name: "Beaver", tier: 1, attack: 2, health: 2, color: "#ab7d61", ability: "sell_buff_attack" },
-  { kind: "cricket", name: "Cricket", tier: 1, attack: 1, health: 2, color: "#8ac95f", ability: "faint_summon_zombie" },
-  { kind: "mosquito", name: "Mosquito", tier: 1, attack: 2, health: 2, color: "#8a7ef2", ability: "start_ping_enemy" },
-  { kind: "otter", name: "Otter", tier: 1, attack: 1, health: 2, color: "#8f9fc2", ability: "buy_buff_random_shop_pet" },
-  { kind: "swan", name: "Swan", tier: 1, attack: 1, health: 3, color: "#e3f3ff", ability: "start_turn_gain_gold" },
-  { kind: "horse", name: "Horse", tier: 1, attack: 2, health: 1, color: "#af8868", ability: "friend_summoned_attack" },
-  { kind: "flamingo", name: "Flamingo", tier: 2, attack: 3, health: 2, color: "#f08da8", ability: "faint_buff_rear" },
-  { kind: "camel", name: "Camel", tier: 2, attack: 2, health: 5, color: "#d1ba75", ability: "hurt_buff_rear" },
-  { kind: "kangaroo", name: "Kangaroo", tier: 2, attack: 1, health: 3, color: "#c58c42", ability: "behind_attack_gain" },
-  { kind: "giraffe", name: "Giraffe", tier: 2, attack: 2, health: 4, color: "#e8b85e", ability: "end_turn_buff_friend_ahead" },
-  { kind: "rabbit", name: "Rabbit", tier: 2, attack: 3, health: 2, color: "#f5f0f7", ability: "friend_eat_bonus_health" },
-  { kind: "peacock", name: "Peacock", tier: 2, attack: 2, health: 5, color: "#76b7c2", ability: "hurt_gain_attack" },
-  { kind: "dodo", name: "Dodo", tier: 2, attack: 2, health: 3, color: "#d7ad7b", ability: "start_battle_buff_friend_ahead_attack" },
-  { kind: "penguin", name: "Penguin", tier: 3, attack: 1, health: 2, color: "#5d7d9f", ability: "end_turn_buff_level2_friends" },
-  { kind: "turtle", name: "Turtle", tier: 3, attack: 1, health: 2, color: "#6aaa77", ability: "faint_give_melon_friend_behind" },
-];
+function getGameData() {
+  const data = window.__GAME_DATA;
+  if (!data || typeof data !== "object") {
+    throw new Error("Missing window.__GAME_DATA. Run build:game-data and load game_data.generated.js before game.js.");
+  }
+  if (!Array.isArray(data.packs) || !Array.isArray(data.pets) || !Array.isArray(data.foods)) {
+    throw new Error("Invalid game data shape. Expected packs/pets/foods arrays.");
+  }
+  return data;
+}
 
-const foodPool = [
-  { kind: "apple", name: "Apple", tier: 1, color: "#e55e57", effect: "stat_1_1" },
-  { kind: "honey", name: "Honey", tier: 1, color: "#e0aa35", effect: "summon_bee" },
-  { kind: "meat", name: "Meat", tier: 1, color: "#d66a4f", effect: "perk_meat" },
-  { kind: "garlic", name: "Garlic", tier: 1, color: "#b9b3a6", effect: "perk_garlic" },
-  { kind: "pear", name: "Pear", tier: 2, color: "#8dc95f", effect: "stat_2_2" },
-  { kind: "salad", name: "Salad", tier: 2, color: "#62c26e", effect: "team_random_buff_1_1" },
-  { kind: "cupcake", name: "Cupcake", tier: 2, color: "#f29ec0", effect: "temp_3_3" },
-  { kind: "canned_food", name: "Can", tier: 2, color: "#8ea7bb", effect: "shop_buff_2_1" },
-  { kind: "melon", name: "Melon", tier: 3, color: "#8fdc78", effect: "perk_melon" },
-  { kind: "chocolate", name: "Chocolate", tier: 3, color: "#9f7a58", effect: "exp_1" },
-];
+function buildGameIndexes(data) {
+  const packByKey = new Map();
+  const petById = new Map();
+  const foodById = new Map();
+  const petByKind = new Map();
+  const foodByKind = new Map();
+  const petsByPack = {};
+  const foodsByPack = {};
+
+  for (const pack of data.packs) {
+    if (!pack?.key) continue;
+    packByKey.set(pack.key, pack);
+    petsByPack[pack.key] = [];
+    foodsByPack[pack.key] = [];
+  }
+
+  for (const pet of data.pets) {
+    if (!pet?.id || !pet?.packKey) continue;
+    petById.set(pet.id, pet);
+    if (!petByKind.has(pet.kind)) petByKind.set(pet.kind, pet);
+    if (!petsByPack[pet.packKey]) petsByPack[pet.packKey] = [];
+    petsByPack[pet.packKey].push(pet);
+  }
+
+  for (const food of data.foods) {
+    if (!food?.id || !food?.packKey) continue;
+    foodById.set(food.id, food);
+    if (!foodByKind.has(food.kind)) foodByKind.set(food.kind, food);
+    if (!foodsByPack[food.packKey]) foodsByPack[food.packKey] = [];
+    foodsByPack[food.packKey].push(food);
+  }
+
+  return {
+    packByKey,
+    petById,
+    foodById,
+    petByKind,
+    foodByKind,
+    petsByPack,
+    foodsByPack,
+  };
+}
+
+const GAME_DATA = getGameData();
+const GAME_INDEXES = buildGameIndexes(GAME_DATA);
+const PACK_KEYS = GAME_DATA.packs.map((pack) => pack.key);
+const DEFAULT_PACK_KEY = PACK_KEYS.includes("pack1") ? "pack1" : PACK_KEYS[0] ?? "pack1";
+const assetImageCache = new Map();
+const ALLOW_ICON_IMAGES = window.location.protocol !== "file:";
 
 function t(key, params = {}) {
   const current = I18N[state.language] || I18N.en;
@@ -505,22 +513,44 @@ function t(key, params = {}) {
   return typeof value === "function" ? value(params) : value;
 }
 
+function localizedEntryName(entry) {
+  if (!entry) return "";
+  const zh = String(entry.nameZh || "").trim();
+  const en = String(entry.nameEn || "").trim();
+  const fallback = String(entry.name || entry.kind || "").trim();
+  if (state.language === "zh") return zh || en || fallback;
+  return en || zh || fallback;
+}
+
+function localizedEntryHint(entry) {
+  if (!entry) return "";
+  const zh = String(entry.hintZhClean || entry.hintZhRaw || "").trim();
+  const en = String(entry.hintEn || "").trim();
+  if (state.language === "zh") return zh || en;
+  return en || zh;
+}
+
+function packDisplayNameByKey(packKey) {
+  const pack = GAME_INDEXES.packByKey.get(packKey);
+  if (!pack) return packKey;
+  if (state.language === "zh") return pack.nameZh || pack.nameEn || pack.key;
+  return pack.nameEn || pack.nameZh || pack.key;
+}
+
+function activePackDisplayName() {
+  return packDisplayNameByKey(state.activePackKey);
+}
+
 function petDisplayName(pet) {
-  if (!pet) return "";
-  if (state.language !== "zh") return pet.name;
-  return PET_NAME_ZH[pet.kind] ?? pet.name;
+  return localizedEntryName(pet);
 }
 
 function foodDisplayName(food) {
-  if (!food) return "";
-  if (state.language !== "zh") return food.name;
-  return FOOD_NAME_ZH[food.kind] ?? food.name;
+  return localizedEntryName(food);
 }
 
 function summonDisplayNameFromTemplate(template) {
-  if (!template) return "";
-  if (state.language !== "zh") return template.name;
-  return PET_NAME_ZH[template.kind] ?? template.name;
+  return localizedEntryName(template);
 }
 
 function perkDisplayName(perk) {
@@ -528,8 +558,14 @@ function perkDisplayName(perk) {
   return t(`perk_${perk}`);
 }
 
-function foodEffectDisplayName(effect) {
-  return t(`food_effect_${effect}`);
+function foodEffectDisplayName(effect, food = null) {
+  if (!effect) return t("info_value_none");
+  if (effect === "placeholder_stat_buff" || food?.implStatus === "placeholder") {
+    return t("food_effect_placeholder_stat_buff");
+  }
+  const key = `food_effect_${effect}`;
+  const value = t(key);
+  return value === key ? effect : value;
 }
 
 function perkDescription(perk) {
@@ -537,19 +573,38 @@ function perkDescription(perk) {
   return t(`perk_desc_${perk}`);
 }
 
-function abilityDisplayName(ability) {
+function abilityDisplayName(ability, pet = null) {
   if (!ability) return t("info_value_none");
-  return t(`ability_name_${ability}`);
+  if (ability === "placeholder_none" || pet?.implStatus === "placeholder") {
+    return t("ability_name_placeholder_none");
+  }
+  const key = `ability_name_${ability}`;
+  const value = t(key);
+  return value === key ? ability : value;
 }
 
-function abilityDescription(ability, level = 1) {
+function abilityDescription(ability, level = 1, pet = null) {
   if (!ability) return t("info_value_none");
-  return t(`ability_desc_${ability}`, { level });
+  const hint = localizedEntryHint(pet);
+  if (ability === "placeholder_none" || pet?.implStatus === "placeholder") {
+    return hint ? `${t("placeholder_ability_notice")} ${hint}` : t("placeholder_ability_notice");
+  }
+  if (hint) return hint;
+  const key = `ability_desc_${ability}`;
+  const value = t(key, { level });
+  return value === key ? t("info_value_none") : value;
 }
 
-function foodEffectDescription(effect) {
+function foodEffectDescription(effect, food = null) {
   if (!effect) return t("info_value_none");
-  return t(`effect_desc_${effect}`);
+  const hint = localizedEntryHint(food);
+  if (effect === "placeholder_stat_buff" || food?.implStatus === "placeholder") {
+    return hint ? `${t("placeholder_effect_notice")} ${hint}` : t("placeholder_effect_notice");
+  }
+  if (hint) return hint;
+  const key = `effect_desc_${effect}`;
+  const value = t(key);
+  return value === key ? t("info_value_none") : value;
 }
 
 function createBattleAnimState() {
@@ -638,6 +693,43 @@ function toggleLanguage() {
   pushToast(t("toast_language_switched", { language: t("language_name") }));
 }
 
+function persistPackPreference() {
+  try {
+    window.localStorage?.setItem(PACK_STORAGE_KEY, state.activePackKey);
+  } catch {
+    // Ignore persistence failures (private mode / blocked storage).
+  }
+}
+
+function restorePackPreference() {
+  try {
+    const saved = window.localStorage?.getItem(PACK_STORAGE_KEY);
+    if (saved && GAME_INDEXES.packByKey.has(saved)) {
+      state.activePackKey = saved;
+    }
+  } catch {
+    // Ignore restore failures and keep default pack.
+  }
+}
+
+function setActivePack(packKey, options = {}) {
+  if (!GAME_INDEXES.packByKey.has(packKey)) return false;
+  const { silent = false, reroll = true } = options;
+  const changed = state.activePackKey !== packKey;
+  state.activePackKey = packKey;
+  persistPackPreference();
+  if (!changed) return true;
+  if (!silent) pushToast(t("toast_pack_switched", { pack: activePackDisplayName() }));
+  if (state.mode === "shop" && reroll) {
+    state.freezePets = Array(SHOP_PET_SLOTS).fill(false);
+    state.freezeFood = Array(SHOP_FOOD_SLOTS).fill(false);
+    clearSelection();
+    clearInspectCard();
+    rerollShop(true);
+  }
+  return true;
+}
+
 function rect(x, y, w, h) {
   return { x, y, w, h };
 }
@@ -648,8 +740,21 @@ function buildRow(x, y, count, w, h, gap) {
   return out;
 }
 
+function buildMenuPackButtons() {
+  const buttonW = 162;
+  const buttonH = 42;
+  const gap = 10;
+  const totalW = GAME_DATA.packs.length * buttonW + Math.max(0, GAME_DATA.packs.length - 1) * gap;
+  const startX = Math.round((WIDTH - totalW) / 2);
+  return GAME_DATA.packs.map((pack, index) => ({
+    ...rect(startX + index * (buttonW + gap), 520, buttonW, buttonH),
+    packKey: pack.key,
+  }));
+}
+
 const ui = {
   startButton: rect(490, 325, 300, 86),
+  menuPackButtons: buildMenuPackButtons(),
   teamSlots: buildRow(70, 128, TEAM_SLOTS, 220, 122, 16),
   shopPetSlots: buildRow(70, 306, SHOP_PET_SLOTS, 220, 122, 16),
   shopFoodSlots: buildRow(70, 466, SHOP_FOOD_SLOTS, 220, 122, 16),
@@ -697,6 +802,7 @@ const debugScenarioButtons = [
 const state = {
   mode: "menu",
   language: "en",
+  activePackKey: DEFAULT_PACK_KEY,
   rngSeed: Math.floor(Date.now() % 2147483647),
   nextId: 1,
   round: 1,
@@ -830,23 +936,48 @@ function lifeLossByRound(round) {
   return 3;
 }
 
-function petDef(kind) {
-  return petPool.find((entry) => entry.kind === kind);
+function resolvePetDef(ref) {
+  if (!ref) return null;
+  if (typeof ref === "object" && ref.id) return ref;
+  const key = String(ref);
+  return GAME_INDEXES.petById.get(key) || GAME_INDEXES.petByKind.get(key) || null;
 }
 
-function createPet(kind, attackOverride, healthOverride) {
-  const def = petDef(kind);
-  if (!def) throw new Error(`Unknown pet kind: ${kind}`);
+function resolveFoodDef(ref) {
+  if (!ref) return null;
+  if (typeof ref === "object" && ref.id) return ref;
+  const key = String(ref);
+  return GAME_INDEXES.foodById.get(key) || GAME_INDEXES.foodByKind.get(key) || null;
+}
+
+function petDef(kindOrId) {
+  return resolvePetDef(kindOrId);
+}
+
+function createPet(kindOrId, attackOverride, healthOverride) {
+  const def = resolvePetDef(kindOrId);
+  if (!def) throw new Error(`Unknown pet ref: ${kindOrId}`);
+  const fallbackName = def.nameEn || def.nameZh || def.kind;
   return {
     id: state.nextId++,
+    sourceId: def.id,
     kind: def.kind,
-    name: def.name,
+    name: fallbackName,
+    nameZh: def.nameZh || fallbackName,
+    nameEn: def.nameEn || "",
     color: def.color,
+    icon: def.iconMissing ? null : def.iconAliasRel,
     attack: attackOverride ?? def.attack,
     health: healthOverride ?? def.health,
     level: 1,
     exp: 0,
-    ability: def.ability,
+    tier: def.tier ?? 1,
+    packKey: def.packKey,
+    ability: def.abilityKey || null,
+    implStatus: def.implStatus || "placeholder",
+    hintZhRaw: def.hintZhRaw || "",
+    hintZhClean: def.hintZhClean || "",
+    hintEn: def.hintEn || "",
     perk: null,
     summonOnFaint: null,
     tempAttack: 0,
@@ -854,26 +985,44 @@ function createPet(kind, attackOverride, healthOverride) {
   };
 }
 
-function createFood(kind) {
-  const def = foodPool.find((entry) => entry.kind === kind);
-  if (!def) throw new Error(`Unknown food kind: ${kind}`);
-  return deepClone(def);
+function createFood(kindOrId) {
+  const def = resolveFoodDef(kindOrId);
+  if (!def) throw new Error(`Unknown food ref: ${kindOrId}`);
+  const fallbackName = def.nameEn || def.nameZh || def.kind;
+  return {
+    id: def.id,
+    kind: def.kind,
+    name: fallbackName,
+    nameZh: def.nameZh || fallbackName,
+    nameEn: def.nameEn || "",
+    tier: def.tier ?? 1,
+    packKey: def.packKey,
+    color: def.color,
+    icon: def.iconMissing ? null : def.iconAliasRel,
+    effect: def.effectKey || "placeholder_stat_buff",
+    implStatus: def.implStatus || "placeholder",
+    hintZhRaw: def.hintZhRaw || "",
+    hintZhClean: def.hintZhClean || "",
+    hintEn: def.hintEn || "",
+    placeholderBuff: def.placeholderBuff ?? 1,
+  };
 }
 
 function shopPoolPets() {
   const tier = maxUnlockedTier();
-  return petPool.filter((pet) => pet.tier <= tier);
+  const pool = GAME_INDEXES.petsByPack[state.activePackKey] || [];
+  return pool.filter((pet) => (pet.tier ?? 1) <= tier);
 }
 
 function shopPoolFood() {
   const tier = maxUnlockedTier();
-  return foodPool.filter((food) => food.tier <= tier);
+  const pool = GAME_INDEXES.foodsByPack[state.activePackKey] || [];
+  return pool.filter((food) => (food.tier ?? 1) <= tier);
 }
 
 function petTier(pet) {
   if (!pet) return 0;
-  const def = petDef(pet.kind);
-  return def?.tier ?? 1;
+  return pet.tier ?? petDef(pet.sourceId || pet.kind)?.tier ?? 1;
 }
 
 function resolveInspectCard() {
@@ -909,6 +1058,7 @@ function resolveInspectCard() {
       title: t("info_title_pet"),
       name: petDisplayName(pet),
       tier: petTier(pet),
+      packKey: pet.packKey ?? state.activePackKey,
     };
   }
 
@@ -931,6 +1081,7 @@ function resolveInspectCard() {
       title: t("info_title_food"),
       name: foodDisplayName(food),
       tier: food.tier ?? 0,
+      packKey: food.packKey ?? state.activePackKey,
     };
   }
 
@@ -960,7 +1111,7 @@ function rerollShop(free = false) {
       state.shopPets[i] = null;
       continue;
     }
-    const pet = createPet(pick.kind);
+    const pet = createPet(pick.id);
     pet.attack += state.shopBuffAttack;
     pet.health += state.shopBuffHealth;
     state.shopPets[i] = pet;
@@ -968,7 +1119,7 @@ function rerollShop(free = false) {
   for (let i = 0; i < SHOP_FOOD_SLOTS; i += 1) {
     if (state.freezeFood[i]) continue;
     const pick = randomChoice(availableFood);
-    state.shopFood[i] = pick ? createFood(pick.kind) : null;
+    state.shopFood[i] = pick ? createFood(pick.id) : null;
   }
   return true;
 }
@@ -1399,12 +1550,31 @@ function applyFood(foodIndex, teamIndex) {
   } else if (food.effect === "perk_melon" && pet) {
     pet.perk = "melon";
   } else if (food.effect === "summon_bee" && pet) {
-    pet.summonOnFaint = { kind: "bee", name: "Bee", attack: 1, health: 1, color: "#f4cf50" };
+    pet.summonOnFaint = {
+      kind: "bee",
+      name: "Bee",
+      nameZh: "蜜蜂",
+      nameEn: "Bee",
+      attack: 1,
+      health: 1,
+      color: "#f4cf50",
+      icon: null,
+      tier: 1,
+      packKey: state.activePackKey,
+      implStatus: "implemented",
+      hintZhRaw: "",
+      hintZhClean: "",
+      hintEn: "",
+    };
   } else if (food.effect === "temp_3_3" && pet) {
     pet.tempAttack += 3;
     pet.tempHealth += 3;
   } else if (food.effect === "exp_1" && pet) {
     gainPetExp(pet, 1);
+  } else if (food.effect === "placeholder_stat_buff" && pet) {
+    const buff = clamp(food.placeholderBuff ?? 1, 1, 6);
+    pet.attack += buff;
+    pet.health += buff;
   } else if (food.effect === "shop_buff_2_1") {
     state.shopBuffAttack += 2;
     state.shopBuffHealth += 1;
@@ -1550,6 +1720,13 @@ function debugButtonAtPosition(x, y) {
   return -1;
 }
 
+function menuPackButtonAtPosition(x, y) {
+  for (let i = 0; i < ui.menuPackButtons.length; i += 1) {
+    if (pointInRect(x, y, ui.menuPackButtons[i])) return i;
+  }
+  return -1;
+}
+
 function handleShopClick(x, y) {
   if (pointInRect(x, y, ui.languageBtn)) {
     toggleLanguage();
@@ -1633,12 +1810,15 @@ function enemyTeamSizeByRound(round) {
 function generateEnemyTeam() {
   const count = enemyTeamSizeByRound(state.round);
   const maxTier = getTierForRound(state.round);
-  const pool = petPool.filter((pet) => pet.tier <= maxTier);
+  const packPool = (GAME_INDEXES.petsByPack[state.activePackKey] || []).filter((pet) => (pet.tier ?? 1) <= maxTier);
+  const fallbackPool = GAME_DATA.pets.filter((pet) => (pet.tier ?? 1) <= maxTier);
+  const pool = packPool.length ? packPool : fallbackPool;
   const bonus = Math.floor((state.round - 1) / 2);
   const team = [];
   for (let i = 0; i < count; i += 1) {
     const pick = randomChoice(pool);
-    const pet = createPet(pick.kind);
+    if (!pick) continue;
+    const pet = createPet(pick.id);
     pet.attack += randInt(0, bonus);
     pet.health += randInt(0, bonus + 1);
     if (seededRandom() < 0.2) pet.perk = "garlic";
@@ -1652,14 +1832,24 @@ function cloneBattlePet(pet) {
   if (!pet) return null;
   return {
     id: pet.id,
+    sourceId: pet.sourceId ?? null,
     kind: pet.kind,
     name: pet.name,
+    nameZh: pet.nameZh || pet.name,
+    nameEn: pet.nameEn || "",
     color: pet.color,
+    icon: pet.icon ?? null,
     attack: pet.attack + (pet.tempAttack ?? 0),
     health: pet.health + (pet.tempHealth ?? 0),
     level: pet.level,
     exp: pet.exp ?? 0,
+    tier: pet.tier ?? 1,
+    packKey: pet.packKey ?? state.activePackKey,
     ability: pet.ability,
+    implStatus: pet.implStatus || "placeholder",
+    hintZhRaw: pet.hintZhRaw || "",
+    hintZhClean: pet.hintZhClean || "",
+    hintEn: pet.hintEn || "",
     perk: pet.perk,
     summonOnFaint: pet.summonOnFaint ? deepClone(pet.summonOnFaint) : null,
     tempAttack: pet.tempAttack ?? 0,
@@ -1749,16 +1939,27 @@ function computeDamage(attacker, defender) {
 }
 
 function summonFromTemplate(template) {
+  const fallbackName = template.nameEn || template.nameZh || template.name || template.kind || "Summon";
   return {
     id: state.nextId++,
+    sourceId: template.sourceId ?? null,
     kind: template.kind,
-    name: template.name,
+    name: fallbackName,
+    nameZh: template.nameZh || fallbackName,
+    nameEn: template.nameEn || "",
     color: template.color,
+    icon: template.icon ?? null,
     attack: template.attack,
     health: template.health,
     level: 1,
     exp: 0,
+    tier: template.tier ?? 1,
+    packKey: template.packKey ?? state.activePackKey,
     ability: null,
+    implStatus: template.implStatus || "placeholder",
+    hintZhRaw: template.hintZhRaw || "",
+    hintZhClean: template.hintZhClean || "",
+    hintEn: template.hintEn || "",
     perk: null,
     summonOnFaint: null,
     tempAttack: 0,
@@ -1813,10 +2014,19 @@ function handleFaint(pet, index, team, sideLabel) {
   if (pet.ability === "faint_summon_zombie") {
     const summon = summonFromTemplate({
       kind: "zombie_cricket",
-      name: "Zombie",
+      name: "Zombie Cricket",
+      nameZh: "僵尸蟋蟀",
+      nameEn: "Zombie Cricket",
       color: "#b7d55f",
+      icon: null,
       attack: pet.level,
       health: pet.level,
+      tier: 1,
+      packKey: pet.packKey ?? state.activePackKey,
+      implStatus: "implemented",
+      hintZhRaw: "",
+      hintZhClean: "",
+      hintEn: "",
     });
     if (team.length < TEAM_SLOTS) {
       team.splice(index, 0, summon);
@@ -2197,16 +2407,53 @@ function update(dt) {
   }
 }
 
-function roundRect(target, x, y, w, h, r, fillStyle) {
+function roundRectPath(target, x, y, w, h, r) {
+  const radius = Math.max(0, Math.min(r, Math.min(w, h) * 0.5));
   target.beginPath();
-  target.moveTo(x + r, y);
-  target.arcTo(x + w, y, x + w, y + h, r);
-  target.arcTo(x + w, y + h, x, y + h, r);
-  target.arcTo(x, y + h, x, y, r);
-  target.arcTo(x, y, x + w, y, r);
+  target.moveTo(x + radius, y);
+  target.arcTo(x + w, y, x + w, y + h, radius);
+  target.arcTo(x + w, y + h, x, y + h, radius);
+  target.arcTo(x, y + h, x, y, radius);
+  target.arcTo(x, y, x + w, y, radius);
   target.closePath();
+}
+
+function roundRect(target, x, y, w, h, r, fillStyle) {
+  roundRectPath(target, x, y, w, h, r);
   target.fillStyle = fillStyle;
   target.fill();
+}
+
+function getImageRecord(src) {
+  if (!ALLOW_ICON_IMAGES) return null;
+  if (!src) return null;
+  let record = assetImageCache.get(src);
+  if (record) return record;
+  const img = new Image();
+  record = { state: "loading", img };
+  assetImageCache.set(src, record);
+  img.onload = () => {
+    record.state = "ready";
+  };
+  img.onerror = () => {
+    record.state = "error";
+  };
+  img.src = encodeURI(src);
+  return record;
+}
+
+function drawIconOrFallback(iconSrc, x, y, w, h, fallbackDraw, corner = 12) {
+  const record = getImageRecord(iconSrc);
+  if (record?.state === "ready" && record.img?.naturalWidth > 0 && record.img?.naturalHeight > 0) {
+    ctx.save();
+    roundRectPath(ctx, x, y, w, h, corner);
+    ctx.clip();
+    ctx.drawImage(record.img, x, y, w, h);
+    ctx.restore();
+    return true;
+  }
+  fallbackDraw();
+  return false;
 }
 
 function drawBackground() {
@@ -2260,9 +2507,11 @@ function drawTopBar() {
   drawPill(802, 42, 210, 50, t("top_level_xp", { level: state.playerLevel, xp: xpText }), "#d5cef9");
 
   ctx.fillStyle = "#294569";
-  ctx.font = "700 18px 'Trebuchet MS', sans-serif";
+  ctx.font = "700 16px 'Trebuchet MS', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(t("top_tier_shop", { tier: maxUnlockedTier() }), 1070, 70);
+  ctx.fillText(t("top_tier_shop", { tier: maxUnlockedTier() }), 1070, 58);
+  ctx.font = "600 15px 'Trebuchet MS', sans-serif";
+  ctx.fillText(activePackDisplayName(), 1070, 82);
   drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
@@ -2304,10 +2553,20 @@ function drawPetCard(slot, pet, options) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.fillStyle = pet.color;
-  ctx.beginPath();
-  ctx.ellipse(x + 46, y + 40, 30, 24, -0.2, 0, Math.PI * 2);
-  ctx.fill();
+  drawIconOrFallback(
+    pet.icon,
+    x + 14,
+    y + 10,
+    64,
+    58,
+    () => {
+      ctx.fillStyle = pet.color;
+      ctx.beginPath();
+      ctx.ellipse(x + 46, y + 40, 30, 24, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    10
+  );
 
   ctx.fillStyle = "#263f60";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
@@ -2342,10 +2601,20 @@ function drawFoodCard(slot, food, options) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.fillStyle = food.color;
-  ctx.beginPath();
-  ctx.arc(x + 44, y + 38, 24, 0, Math.PI * 2);
-  ctx.fill();
+  drawIconOrFallback(
+    food.icon,
+    x + 14,
+    y + 10,
+    56,
+    56,
+    () => {
+      ctx.fillStyle = food.color;
+      ctx.beginPath();
+      ctx.arc(x + 44, y + 38, 24, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    9
+  );
 
   ctx.fillStyle = "#324c6f";
   ctx.font = "700 20px 'Trebuchet MS', sans-serif";
@@ -2354,7 +2623,7 @@ function drawFoodCard(slot, food, options) {
 
   ctx.font = "600 14px 'Trebuchet MS', sans-serif";
   ctx.fillStyle = "#4e6687";
-  ctx.fillText(foodEffectDisplayName(food.effect), x + 78, y + 50);
+  ctx.fillText(foodEffectDisplayName(food.effect, food), x + 78, y + 50);
   drawStatToken(x + w - 62, y + 8, `${price}G`, "#ffe88f", 54);
 }
 
@@ -2441,6 +2710,14 @@ function drawMenu() {
   ctx.fillText(t("menu_line1"), WIDTH / 2, 356);
   ctx.fillText(t("menu_line2"), WIDTH / 2, 396);
   drawButton(ui.startButton, t("menu_start"), "#91d38e", true);
+
+  ctx.fillStyle = "#38557b";
+  ctx.font = "700 18px 'Trebuchet MS', sans-serif";
+  ctx.fillText(t("menu_pack_select"), WIDTH / 2, 505);
+  for (const box of ui.menuPackButtons) {
+    const active = state.activePackKey === box.packKey;
+    drawButton(box, packDisplayNameByKey(box.packKey), active ? "#9bc8ff" : "#e6f1ff", active);
+  }
   drawButton(ui.languageBtn, t("language_switch_target"), "#d7e9ff");
 }
 
@@ -2464,10 +2741,20 @@ function drawBattleLine(line, slots, faceRight, sideKey, battle) {
     ctx.lineWidth = 2;
     ctx.stroke();
     if (!pet) continue;
-    ctx.fillStyle = pet.color;
-    ctx.beginPath();
-    ctx.ellipse(px + 51, py + 86, 34, 28, faceRight ? -0.15 : 0.15, 0, Math.PI * 2);
-    ctx.fill();
+    drawIconOrFallback(
+      pet.icon,
+      px + 18,
+      py + 42,
+      66,
+      60,
+      () => {
+        ctx.fillStyle = pet.color;
+        ctx.beginPath();
+        ctx.ellipse(px + 51, py + 86, 34, 28, faceRight ? -0.15 : 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      },
+      10
+    );
 
     if (i === 0 && (anim?.impactAlpha ?? 0) > 0) {
       roundRect(ctx, px + 4, py + 6, slot.w - 8, slot.h - 12, 10, `rgba(255,255,255,${0.24 * anim.impactAlpha})`);
@@ -2619,6 +2906,7 @@ function drawInspectPanel() {
   const rows = [
     { label: t("info_field_source"), value: inspect.sourceText },
     { label: t("info_field_type"), value: inspect.kind === "pet" ? t("info_type_pet") : t("info_type_food") },
+    { label: t("info_field_pack"), value: packDisplayNameByKey(inspect.packKey) },
     { label: t("info_field_tier"), value: inspect.tier },
   ];
 
@@ -2646,7 +2934,7 @@ function drawInspectPanel() {
     const pet = inspect.pet;
     primaryLabel = t("info_field_ability");
     primaryLines = wrapTextByWidth(
-      `${abilityDisplayName(pet.ability)}: ${abilityDescription(pet.ability, pet.level)}`,
+      `${abilityDisplayName(pet.ability, pet)}: ${abilityDescription(pet.ability, pet.level, pet)}`,
       contentW
     ).slice(0, 4);
     if (pet.perk) {
@@ -2659,7 +2947,10 @@ function drawInspectPanel() {
   } else {
     const food = inspect.food;
     primaryLabel = t("info_field_effect");
-    primaryLines = wrapTextByWidth(`${foodEffectDisplayName(food.effect)}: ${foodEffectDescription(food.effect)}`, contentW).slice(0, 5);
+    primaryLines = wrapTextByWidth(
+      `${foodEffectDisplayName(food.effect, food)}: ${foodEffectDescription(food.effect, food)}`,
+      contentW
+    ).slice(0, 5);
   }
 
   const baseHeight = 102;
@@ -2819,6 +3110,12 @@ function handlePrimaryClick(x, y) {
   }
 
   if (state.mode === "menu") {
+    const packIdx = menuPackButtonAtPosition(x, y);
+    if (packIdx !== -1) {
+      const pack = GAME_DATA.packs[packIdx];
+      if (pack) setActivePack(pack.key);
+      return;
+    }
     if (pointInRect(x, y, ui.startButton)) resetGame();
     return;
   }
@@ -3060,9 +3357,15 @@ function resizeCanvasDisplay() {
 function compactPet(pet) {
   if (!pet) return null;
   return {
+    id: pet.id,
+    sourceId: pet.sourceId ?? null,
     kind: pet.kind,
     name: pet.name,
     displayName: petDisplayName(pet),
+    icon: pet.icon ?? null,
+    tier: pet.tier ?? 1,
+    packKey: pet.packKey ?? null,
+    implStatus: pet.implStatus || "placeholder",
     attack: pet.attack,
     health: pet.health,
     level: pet.level,
@@ -3090,10 +3393,11 @@ function compactInspectCard() {
       level: pet.level,
       exp: pet.exp,
       tier: inspect.tier,
+      pack: packDisplayNameByKey(inspect.packKey),
       perk: pet.perk ? { name: perkDisplayName(pet.perk), description: perkDescription(pet.perk) } : null,
       ability: {
-        name: abilityDisplayName(pet.ability),
-        description: abilityDescription(pet.ability, pet.level),
+        name: abilityDisplayName(pet.ability, pet),
+        description: abilityDescription(pet.ability, pet.level, pet),
       },
     };
   }
@@ -3108,9 +3412,10 @@ function compactInspectCard() {
     anchorY: inspect.anchorY,
     name: foodDisplayName(food),
     tier: inspect.tier,
+    pack: packDisplayNameByKey(inspect.packKey),
     effect: {
-      name: foodEffectDisplayName(food.effect),
-      description: foodEffectDescription(food.effect),
+      name: foodEffectDisplayName(food.effect, food),
+      description: foodEffectDescription(food.effect, food),
     },
   };
 }
@@ -3119,6 +3424,8 @@ function renderGameToText() {
   const payload = {
     coordinateSystem: "origin=(0,0) top-left; +x right; +y down; canvas=1280x720",
     language: state.language,
+    activePackKey: state.activePackKey,
+    assetCatalogVersion: GAME_DATA.version,
     mode: state.mode,
     round: state.round,
     playerLevel: state.playerLevel,
@@ -3151,7 +3458,19 @@ function renderGameToText() {
       food: state.shopFood.map((food, idx) => ({
         slot: idx,
         frozen: state.freezeFood[idx],
-        food: food ? { kind: food.kind, name: food.name, displayName: foodDisplayName(food), effect: food.effect } : null,
+        food: food
+          ? {
+              id: food.id,
+              kind: food.kind,
+              name: food.name,
+              displayName: foodDisplayName(food),
+              icon: food.icon ?? null,
+              tier: food.tier ?? 1,
+              packKey: food.packKey ?? null,
+              effect: food.effect,
+              implStatus: food.implStatus || "placeholder",
+            }
+          : null,
       })),
     },
     battle: state.battle
@@ -3208,6 +3527,7 @@ window.addEventListener("resize", resizeCanvasDisplay);
 document.addEventListener("fullscreenchange", resizeCanvasDisplay);
 
 restoreLanguagePreference();
+restorePackPreference();
 resizeCanvasDisplay();
 render();
 requestAnimationFrame(loop);
