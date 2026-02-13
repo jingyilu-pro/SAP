@@ -26,6 +26,7 @@ const BATTLE_SHIFT_SECONDS = 0.17;
 const BATTLE_FRONT_LUNGE_PX = 18;
 const BATTLE_FRONT_IMPACT_PX = 8;
 const BATTLE_RESULT_CONFIRM_DELAY_SECONDS = 0.08;
+const END_TURN_CONFIRM_SECONDS = 1.8;
 const SHOP_CONTROL_GAP = 18;
 const SHOP_CONTROL_BTN_W = 166;
 const SHOP_CONTROL_BTN_H = 56;
@@ -210,6 +211,7 @@ const I18N = {
     toast_not_enough_gold_reroll: "Not enough gold for reroll.",
     toast_no_pet_to_sell: "No pet to sell.",
     toast_sold_pet_gold: "Sold pet for 1 gold.",
+    toast_end_turn_gold_left: ({ gold }) => `You still have ${gold} gold. Click End Turn again to confirm.`,
     toast_pet_level_buff: ({ pet, buff }) => `${pet} leveled: team buff +${buff}/+${buff}.`,
     toast_buffed_shop_pet: ({ pet }) => `${pet} buffed a shop pet.`,
     toast_scenario_chocolate: "Scenario loaded: Chocolate -> Fish level up.",
@@ -402,6 +404,7 @@ const I18N = {
     toast_not_enough_gold_reroll: "金币不足，无法刷新。",
     toast_no_pet_to_sell: "没有可出售的宠物。",
     toast_sold_pet_gold: "出售宠物，获得 1 金币。",
+    toast_end_turn_gold_left: ({ gold }) => `你还有 ${gold} 金币，点击“结束回合”再次确认。`,
     toast_pet_level_buff: ({ pet, buff }) => `${pet} 升级：全队 +${buff}/+${buff}。`,
     toast_buffed_shop_pet: ({ pet }) => `${pet} 强化了一个商店宠物。`,
     toast_scenario_chocolate: "已加载预设：巧克力让鱼升级。",
@@ -512,13 +515,34 @@ function t(key, params = {}) {
   return typeof value === "function" ? value(params) : value;
 }
 
+function hasI18nKey(key) {
+  const current = I18N[state.language] || I18N.en;
+  return Object.prototype.hasOwnProperty.call(current, key) || Object.prototype.hasOwnProperty.call(I18N.en, key);
+}
+
 function localizedEntryName(entry) {
   if (!entry) return "";
   const zh = String(entry.nameZh || "").trim();
   const en = String(entry.nameEn || "").trim();
   const fallback = String(entry.name || entry.kind || "").trim();
   if (state.language === "zh") return zh || en || fallback;
-  return en || zh || fallback;
+  const enFallback = englishMissingNameFallback(entry, zh);
+  return en || enFallback || zh || fallback;
+}
+
+function englishMissingNameFallback(entry, zhName = "") {
+  const zh = String(zhName || "").trim();
+  const hasCjk = /[\u3400-\u9fff]/.test(zh);
+  if (!hasCjk) return "";
+
+  const idText = String(entry.sourceId || entry.id || entry.kind || "").trim();
+  const m = /^pack(\d+)_(pet|food)_(\d+)$/i.exec(idText);
+  if (m) {
+    const kindLabel = m[2].toLowerCase() === "pet" ? "P" : "F";
+    const seq = m[3].padStart(4, "0");
+    return `${kindLabel}${seq}`;
+  }
+  return "";
 }
 
 function localizedEntryHint(entry) {
@@ -563,8 +587,8 @@ function foodEffectDisplayName(effect, food = null) {
     return t("food_effect_placeholder_stat_buff");
   }
   const key = `food_effect_${effect}`;
-  const value = t(key);
-  return value === key ? effect : value;
+  if (hasI18nKey(key)) return t(key);
+  return effect;
 }
 
 function perkDescription(perk) {
@@ -578,32 +602,32 @@ function abilityDisplayName(ability, pet = null) {
     return t("ability_name_placeholder_none");
   }
   const key = `ability_name_${ability}`;
-  const value = t(key);
-  return value === key ? ability : value;
+  if (hasI18nKey(key)) return t(key);
+  return ability;
 }
 
 function abilityDescription(ability, level = 1, pet = null) {
   if (!ability) return t("info_value_none");
-  const hint = localizedEntryHint(pet);
   if (ability === "placeholder_none" || pet?.implStatus === "placeholder") {
+    const hint = localizedEntryHint(pet);
     return hint ? `${t("placeholder_ability_notice")} ${hint}` : t("placeholder_ability_notice");
   }
-  if (hint) return hint;
   const key = `ability_desc_${ability}`;
-  const value = t(key, { level });
-  return value === key ? t("info_value_none") : value;
+  if (hasI18nKey(key)) return t(key, { level });
+  const hint = localizedEntryHint(pet);
+  return hint || t("info_value_none");
 }
 
 function foodEffectDescription(effect, food = null) {
   if (!effect) return t("info_value_none");
-  const hint = localizedEntryHint(food);
   if (effect === "placeholder_stat_buff" || food?.implStatus === "placeholder") {
+    const hint = localizedEntryHint(food);
     return hint ? `${t("placeholder_effect_notice")} ${hint}` : t("placeholder_effect_notice");
   }
-  if (hint) return hint;
   const key = `effect_desc_${effect}`;
-  const value = t(key);
-  return value === key ? t("info_value_none") : value;
+  if (hasI18nKey(key)) return t(key);
+  const hint = localizedEntryHint(food);
+  return hint || t("info_value_none");
 }
 
 function createBattleAnimState() {
@@ -818,6 +842,7 @@ const state = {
   freezePets: Array(SHOP_PET_SLOTS).fill(false),
   freezeFood: Array(SHOP_FOOD_SLOTS).fill(false),
   selected: null,
+  endTurnConfirmTime: 0,
   toast: "",
   toastTime: 0,
   battle: null,
@@ -883,6 +908,10 @@ function setInspectCard(kind, source, index, anchor) {
 function clearInspectCard() {
   state.inspectCard = null;
   state.inspectPanelRect = null;
+}
+
+function clearEndTurnConfirm() {
+  state.endTurnConfirmTime = 0;
 }
 
 function inspectModalIsOpen() {
@@ -1093,6 +1122,7 @@ function pushToast(message) {
 }
 
 function rerollShop(free = false) {
+  clearEndTurnConfirm();
   if (!free) {
     if (state.gold < REROLL_COST) {
       pushToast(t("toast_not_enough_gold_reroll"));
@@ -1130,6 +1160,7 @@ function beginShopTurn() {
     .reduce((sum, pet) => sum + pet.level, 0);
   state.gold += startTurnGold;
   state.selected = null;
+  clearEndTurnConfirm();
   clearInspectCard();
   rerollShop(true);
 }
@@ -1142,6 +1173,7 @@ function resetGame() {
   state.lives = START_LIVES;
   state.trophies = 0;
   state.gold = TURN_GOLD;
+  clearEndTurnConfirm();
   state.shopBuffAttack = 0;
   state.shopBuffHealth = 0;
   state.team = Array(TEAM_SLOTS).fill(null);
@@ -1168,6 +1200,7 @@ function onSellTeamPet(slotIndex) {
   }
 
   state.gold = clamp(state.gold + 1, 0, TURN_GOLD + 20);
+  clearEndTurnConfirm();
   if (pet.ability === "sell_buff_attack") {
     const candidates = state.team
       .map((ally, idx) => ({ ally, idx }))
@@ -1400,6 +1433,7 @@ function resetScenarioBase(round = 3, level = 3) {
   state.playerLevel = level;
   state.playerXp = 0;
   state.gold = TURN_GOLD;
+  clearEndTurnConfirm();
   state.lives = START_LIVES;
   state.trophies = 0;
   state.shopBuffAttack = 0;
@@ -1499,6 +1533,7 @@ function buyPet(shopIndex, teamIndex) {
   }
 
   state.gold -= PET_COST;
+  clearEndTurnConfirm();
   state.shopPets[shopIndex] = null;
   state.freezePets[shopIndex] = false;
   if (!target) {
@@ -1533,6 +1568,7 @@ function applyFood(foodIndex, teamIndex) {
   }
 
   state.gold -= FOOD_COST;
+  clearEndTurnConfirm();
   state.shopFood[foodIndex] = null;
   state.freezeFood[foodIndex] = false;
 
@@ -1759,7 +1795,7 @@ function handleShopClick(x, y) {
     return;
   }
   if (pointInRect(x, y, ui.endTurnBtn)) {
-    startBattle();
+    attemptStartBattle();
     return;
   }
 
@@ -2356,7 +2392,20 @@ function runEndTurnTeamAbilities() {
   }
 }
 
+function attemptStartBattle() {
+  if (state.mode !== "shop") return false;
+  if (!state.debugEnemyPreset && state.gold > 0 && state.endTurnConfirmTime <= 0) {
+    state.endTurnConfirmTime = END_TURN_CONFIRM_SECONDS;
+    pushToast(t("toast_end_turn_gold_left", { gold: state.gold }));
+    return false;
+  }
+  clearEndTurnConfirm();
+  startBattle();
+  return true;
+}
+
 function startBattle() {
+  clearEndTurnConfirm();
   runEndTurnTeamAbilities();
   const friendlyLine = activeBattleLine(state.team);
   if (!friendlyLine.length) {
@@ -2400,6 +2449,7 @@ function startBattle() {
 
 function update(dt) {
   if (state.toastTime > 0) state.toastTime = Math.max(0, state.toastTime - dt);
+  if (state.endTurnConfirmTime > 0) state.endTurnConfirmTime = Math.max(0, state.endTurnConfirmTime - dt);
 
   if (state.mode === "battle" && state.battle) {
     advanceBattleAnimation(state.battle, dt);
@@ -3255,7 +3305,7 @@ function onKeyDown(event) {
 
   if (key === "r") rerollShop(false);
   if (key === "x") toggleFreezeSelection();
-  if (key === "e") startBattle();
+  if (key === "e") attemptStartBattle();
   if (key === "s" && state.selected?.type === "team") {
     onSellTeamPet(state.selected.index);
     clearSelection();
@@ -3432,6 +3482,7 @@ function renderGameToText() {
     lives: state.lives,
     trophies: state.trophies,
     shopTier: maxUnlockedTier(),
+    endTurnConfirmTime: Number((state.endTurnConfirmTime || 0).toFixed(2)),
     shopBuff: { attack: state.shopBuffAttack, health: state.shopBuffHealth },
     selected: state.selected ? { ...state.selected } : null,
     inspectCard: compactInspectCard(),

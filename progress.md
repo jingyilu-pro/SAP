@@ -315,3 +315,31 @@ Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\devel
   - Verified icon rendering in both:
     - file URL run: `output/web-game/file-icon-render/shot-0.png`
     - http URL run: `output/web-game/http-icon-render-2/shot-0.png`
+- Iteration 13: bug-batch verification and quality fixes (display/icon/description/end-turn confirm).
+  - Confirmed end-turn gold confirmation is active:
+    - First click on `End Turn` with gold left now keeps `mode=shop`, shows toast, and starts confirm timer.
+    - Validation artifact: `output/web-game/verify-end-turn-gold/state-0.json` (`endTurnConfirmTime > 0`, toast present).
+  - Confirmed implemented item description priority is fixed:
+    - `foodEffectDescription('perk_meat', implemented)` now returns canonical i18n description instead of OCR hint text.
+    - Placeholder effect still appends cleaned hint for transparency.
+  - Confirmed known icon mismatch fallback is active:
+    - `pack1_pet_0018` (`蠕虫`) is now marked `iconMissing=true` in generated data and runtime `createPet` returns `icon: null`.
+    - This prevents wrong food icon (apple) from being rendered on that placeholder pet.
+  - Data sanity checks:
+    - placeholder pets forced to icon fallback by overlap rule: `14`.
+  - Notes:
+    - Mixed EN UI with some CN placeholder names is expected under current fallback policy (`name_en` missing -> zh fallback).
+    - If required next iteration can switch EN fallback to ASCII IDs or curated EN aliases for placeholder entries.
+- Iteration 14: EN placeholder-name display cleanup.
+  - Updated `localizedEntryName` in `src/game.js`:
+    - For EN mode entries missing `name_en` where `name_zh` is CJK, use ASCII fallback IDs from `sourceId/id`.
+    - Fallback format now short to avoid card truncation:
+      - pet: `P0003`
+      - food: `F0002`
+  - This removes mixed-language card names on EN UI while preserving CN names in ZH mode.
+  - Validation:
+    - `node --check src/game.js` passed.
+    - Targeted visual check: `output/web-game/verify-en-fallback/shot-0.png` shows EN-safe placeholder labels.
+    - Full regression rerun passed:
+      - scenario assertions: 5/5
+      - action regressions: 13/13

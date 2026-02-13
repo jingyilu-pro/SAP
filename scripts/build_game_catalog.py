@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import shutil
 import unicodedata
@@ -391,6 +392,45 @@ def ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _file_md5(path: Path) -> str:
+    return hashlib.md5(path.read_bytes()).hexdigest()
+
+
+def mark_suspicious_placeholder_pet_icons(pets: list[dict[str, Any]], foods: list[dict[str, Any]]) -> None:
+    pet_hash_to_indices: dict[str, list[int]] = {}
+    food_hashes: set[str] = set()
+
+    for index, food in enumerate(foods):
+        if food.get("iconMissing"):
+            continue
+        alias = food.get("iconAliasRel")
+        if not alias:
+            continue
+        icon_path = ROOT_DIR / alias
+        if not icon_path.exists():
+            continue
+        food_hashes.add(_file_md5(icon_path))
+
+    for index, pet in enumerate(pets):
+        if pet.get("iconMissing"):
+            continue
+        alias = pet.get("iconAliasRel")
+        if not alias:
+            continue
+        icon_path = ROOT_DIR / alias
+        if not icon_path.exists():
+            continue
+        h = _file_md5(icon_path)
+        pet_hash_to_indices.setdefault(h, []).append(index)
+
+    overlapping_hashes = set(pet_hash_to_indices).intersection(food_hashes)
+    for h in overlapping_hashes:
+        for pet_index in pet_hash_to_indices[h]:
+            pet = pets[pet_index]
+            if pet.get("implStatus") == "placeholder":
+                pet["iconMissing"] = True
+
+
 def build_catalog() -> dict[str, Any]:
     if not SOURCE_XLSX.exists():
         raise FileNotFoundError(f"Missing source config: {SOURCE_XLSX}")
@@ -606,6 +646,8 @@ def build_catalog() -> dict[str, Any]:
     food_by_kind: dict[str, dict[str, Any]] = {}
     for food in foods:
         food_by_kind.setdefault(food["kind"], food)
+
+    mark_suspicious_placeholder_pet_icons(pets, foods)
 
     payload = {
         "version": datetime.now(timezone.utc).isoformat(),
