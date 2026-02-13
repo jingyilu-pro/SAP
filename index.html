@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Super Auto Pets - Web Clone</title>
+    <style>
+      :root {
+        --bg0: #f2f7ff;
+        --bg1: #d6ebff;
+        --ink: #233049;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 15% 20%, var(--bg0), var(--bg1));
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+
+      #game-shell {
+        width: 100vw;
+        height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      canvas {
+        display: block;
+        border-radius: 18px;
+        box-shadow: 0 22px 48px rgba(12, 42, 88, 0.25);
+        border: 2px solid rgba(25, 54, 98, 0.35);
+        background: #ffffff;
+        image-rendering: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-shell">
+      <canvas id="game-canvas" width="1280" height="720"></canvas>
+    </div>
+    <script src="./src/game.js"></script>
+  </body>
+</html>

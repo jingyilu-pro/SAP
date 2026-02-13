@@ -1,0 +1,15 @@
+{
+  "name": "aigame-super-auto-pets-clone",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test:play": "node \"C:/Users/陆敬毅/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js\" --url http://localhost:5173 --actions-file ./test/actions-smoke.json --iterations 3 --pause-ms 200",
+    "test:scenarios": "node ./scripts/run_scenario_assertions.mjs",
+    "test:regression": "node ./scripts/run_full_regression.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

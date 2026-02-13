@@ -1,0 +1,150 @@
+Original prompt: [$develop-web-game](C:\\Users\\陆敬毅\\.codex\\skills\\develop-web-game\\SKILL.md) 复刻一款 steam 游戏，名字叫《super auto pets》
+
+## 2026-02-12
+- Initialized project from empty workspace.
+- Will build a playable Super Auto Pets inspired web clone with canvas UI and deterministic test hooks.
+- TODO: implement shop/team/battle loop.
+- Implemented first playable build: menu -> shop -> battle -> next round loop.
+- Added pets (ant/fish/beaver/cricket/mosquito/flamingo/camel/kangaroo) and food effects.
+- Added controls: click interactions, right-click freeze, R/X/S/E shortcuts, F fullscreen.
+- Added deterministic hooks: window.render_game_to_text and window.advanceTime(ms).
+- Added local static server (server.js) and Playwright smoke actions (test/actions-smoke.json).
+- Code review finding fixed: battle faint cleanup order was unsafe for summon-on-faint and could remove summons or loop; now remove dead unit before faint effects, and rear-target indexing adjusted.
+- Tuned level-up threshold for level 3 from 5 to 3 exp to better match SAP behavior.
+- Validation loop:
+  - `node --check src/game.js` passed.
+  - Playwright client runs now succeed via local copy fallback to installed Chrome channel.
+  - Scenarios executed: battle-mid, shop-features (freeze/sell/food), round-complete, and explicit battle-screen capture.
+  - No console/page errors in new runs.
+- Visual inspection completed for latest screenshots:
+  - shop UI renders correctly on desktop scale.
+  - battle scene visible and consistent with state JSON (mode=battle, teams/log).
+- Remaining TODOs / next iteration suggestions:
+  - Add more pets/foods and exact SAP-trigger ordering for higher fidelity.
+  - Add drag-and-drop UX and mobile-specific layout polish.
+  - Add deterministic seeded enemy presets for repeatable balancing tests.
+- Iteration 2 in progress:
+  - Added player progression state (level/xp), tier unlock by progress, and scalable life loss by round.
+  - Expanded pet pool and food pool with new abilities/effects.
+  - Added one-battle food buffs and summon synergy hooks.
+  - Implemented drag system scaffolding for shop interactions.
+  - Next: run full Playwright validation and adjust visuals/text output.
+- Validation (iteration 2) complete:
+  - `node --check src/game.js` passed.
+  - Playwright scenarios passed with no console/page errors:
+    - iter2-shop
+    - iter2-battle
+    - iter2-round
+    - iter2-targetless
+    - iter2-food-battle
+    - iter2-smoke (2 iterations)
+- Visual review notes:
+  - Shop, battle, and progression HUD (level/xp/tier) render correctly.
+  - Tier unlock verified in smoke run: level reached 2 and tier switched to 2 with new tier-2 pets/foods.
+  - Drag-capable UX message shown and sell target remains functional.
+- Remaining follow-ups:
+  - Add dedicated automated drag-path action payload (mouse-down/move/up granularity) when client supports persistent hold motion.
+  - Tighten exact SAP trigger ordering and broaden pet roster.
+- Added higher-fidelity triggers:
+  - New pets: Peacock, Dodo, Penguin, Turtle.
+  - New foods: Melon, Chocolate.
+  - Added pet EXP helper and chocolate leveling path.
+  - Added melon shield and extra start/end-turn trigger behaviors.
+- Starting regression test batch now.
+- Validation (iteration 3) complete:
+  - `node --check src/game.js` passed.
+  - Playwright scenarios passed with no console/page errors:
+    - iter3-shop
+    - iter3-battle
+    - iter3-round
+    - iter3-smoke (2 iterations)
+    - iter3-exp-foods
+- Visual review notes:
+  - Battle screenshot confirms summon/faint chain still stable after new triggers.
+  - Tier progression still unlocks higher-tier units/foods as expected.
+  - New mid-tier pets (peacock/rabbit etc.) appear in shop at tier 2+.
+- Follow-up TODO:
+  - Add deterministic scenario payloads specifically targeting chocolate/melon/dodo/penguin triggers for stricter regression assertions.
+  - Continue toward exact SAP priority queue ordering (currently close, not 1:1).
+
+## 2026-02-13
+- Iteration 4: trigger queue readability + deterministic scenario capture tuning.
+- Fixed trigger noise in battle queue output:
+  - Added `hasHurtBehavior` and `hasFaintBehavior` guards so only real hurt/faint abilities enqueue corresponding triggers.
+  - Removed misleading trigger entries for pets without relevant hurt/faint behavior (e.g. beaver showing as fake faint/hurt trigger).
+  - Standardized `triggerResolved` label formatting to `phase:side:actor [note]`.
+- Improved battle observability:
+  - Added explicit combat log line when Melon blocks damage.
+  - Exposed `battle.resultTime` and `battle.resultHold` in `render_game_to_text` to aid deterministic capture timing.
+  - Cleared scenario toast at battle start so battle logs are not visually obscured during scripted validation.
+- Refined debug scenario presets for consistent signal:
+  - `melon`: fish with melon vs high-attack beaver for guaranteed melon consumption.
+  - `dodo`: front fish + dodo vs beaver stats adjusted for stable start-battle buff + trade sequence.
+  - `turtle`: turtle/fish/horse vs beaver tuned for reliable turtle faint -> melon handoff before result.
+- Updated scenario action timings:
+  - `actions-scenario-melon.json`, `actions-scenario-dodo.json`, `actions-scenario-peng.json`, `actions-scenario-turtle.json`.
+- Validation completed:
+  - `node --check src/game.js` passed.
+  - Scenario loop rerun to dedicated folders:
+    - `scenario-choco-new`
+    - `scenario-melon-new`
+    - `scenario-dodo-new`
+    - `scenario-peng-new`
+    - `scenario-turtle-new`
+  - Full regression batch rerun for all `test/actions-*.json` into `output/web-game/iter4-*`; no new console/page error artifacts produced in those iter4 folders.
+  - Visual inspection completed for key screenshots:
+    - Choco: fish level-up visible in shop.
+    - Melon: melon shield consumption visible in battle log and perk removed.
+    - Dodo: start-battle dodo buff visible before trades.
+    - Penguin: end-turn buff reflected in fish combat stats.
+    - Turtle: turtle faint gives melon to fish before follow-up trade.
+- Remaining TODO / next iteration suggestions:
+  - Add assertion script(s) over `state-0.json` for scenario runs to automatically check trigger/log invariants (currently manual inspection + JSON readback).
+  - Continue moving toward closer SAP timing/order fidelity for multi-faint chain edge cases (simultaneous summons + layered hurt/faint cascades).
+
+- Iteration 5: automated scenario assertions added (no longer manual-only verification).
+- Added `scripts/run_scenario_assertions.mjs`:
+  - Runs scenario actions (`choco/melon/dodo/peng/turtle`) via local `scripts/web_game_playwright_client.js` using the current Node runtime (`process.execPath`).
+  - Writes outputs under `output/web-game/scenario-assertions/<scenario>/`.
+  - Fails on Playwright error artifacts (`errors-0.json`) and validates `state-0.json` invariants per scenario.
+  - Supports optional filtering by scenario name args (example: `node scripts/run_scenario_assertions.mjs melon turtle`).
+- Added npm script:
+  - `test:scenarios` -> `node ./scripts/run_scenario_assertions.mjs`
+- Validation completed:
+  - `node --check scripts/run_scenario_assertions.mjs` passed.
+  - `node --check src/game.js` passed.
+  - `node scripts/run_scenario_assertions.mjs` passed all 5 scenarios.
+  - Visual inspection completed for generated scenario assertion screenshots:
+    - `output/web-game/scenario-assertions/choco/shot-0.png`
+    - `output/web-game/scenario-assertions/melon/shot-0.png`
+    - `output/web-game/scenario-assertions/dodo/shot-0.png`
+    - `output/web-game/scenario-assertions/peng/shot-0.png`
+    - `output/web-game/scenario-assertions/turtle/shot-0.png`
+- Remaining TODO / next iteration suggestions:
+  - Add one broader command that runs `test:scenarios` + the existing generic `actions-*.json` regression batch in one step.
+  - Add assertion coverage for queue ordering details (`battle.triggerResolved`) in chained faint/summon edge cases.
+
+- Iteration 6: one-command full regression pipeline added.
+- Added `scripts/run_full_regression.mjs`:
+  - Runs `run_scenario_assertions.mjs` first (5 deterministic scenario checks).
+  - Then runs all non-scenario `test/actions-*.json` payloads through `scripts/web_game_playwright_client.js`.
+  - Writes outputs to `output/web-game/full-regression/<action-name>/`.
+  - Fails on non-zero Playwright exit or generated `errors-0.json`.
+  - Supports optional action file filter args (example: `node scripts/run_full_regression.mjs actions-smoke.json`).
+- Added npm script:
+  - `test:regression` -> `node ./scripts/run_full_regression.mjs`
+- Validation completed:
+  - `node --check scripts/run_full_regression.mjs` passed.
+  - `node --check scripts/run_scenario_assertions.mjs` passed.
+  - `node scripts/run_full_regression.mjs` passed:
+    - scenario assertions: 5/5 pass
+    - non-scenario action regressions: 8/8 pass
+  - Filter mode validated:
+    - `node scripts/run_full_regression.mjs actions-smoke.json` passed.
+  - Visual inspection completed for latest regression screenshots:
+    - `output/web-game/full-regression/actions-battle-screen/shot-0.png`
+    - `output/web-game/full-regression/actions-shop-features/shot-0.png`
+    - `output/web-game/full-regression/actions-round-complete/shot-0.png`
+- Remaining TODO / next iteration suggestions:
+  - Add queue-order assertions for chained edge cases (multi-faint + summon + hurt interleave) directly in scenario assertion script.
+  - Consider refactoring shared Playwright runner helpers between `run_scenario_assertions.mjs` and `run_full_regression.mjs` to reduce duplication.
